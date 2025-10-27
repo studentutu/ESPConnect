@@ -291,7 +291,7 @@
                         </span>
                       </div>
                     </template>
-                    <template #text>
+                    <template #default>
                       <div class="partition-tooltip">
                         <div class="partition-tooltip__title">{{ segment.label || 'Unnamed' }}</div>
                         <div
