@@ -448,6 +448,7 @@ const FACT_ICONS = {
   'USB Bridge': 'mdi-usb-port',
   'Connection Baud': 'mdi-speedometer',
   'eFuse Block Version': 'mdi-shield-key',
+  'Partition Table': 'mdi-table',
 };
 
 function formatBytes(bytes) {
@@ -499,6 +500,34 @@ function formatUsbBridge(info) {
     return `${vendorName} (${productHex})`;
   }
   return vendorName;
+}
+
+async function readPartitionTable(loader, offset = 0x8000, length = 0x400) {
+  try {
+    const data = await loader.readFlash(offset, length);
+    const view = new DataView(data.buffer, data.byteOffset, data.byteLength);
+    const decoder = new TextDecoder();
+    const entries = [];
+    for (let i = 0; i + 32 <= data.length; i += 32) {
+      const magic = view.getUint16(i, true);
+      if (magic === 0xffff || magic === 0x0000) break;
+      if (magic !== 0x50aa) continue;
+      const type = view.getUint8(i + 2);
+      const subtype = view.getUint8(i + 3);
+      const addr = view.getUint32(i + 4, true);
+      const size = view.getUint32(i + 8, true);
+      const labelBytes = data.subarray(i + 12, i + 28);
+      const label = decoder
+        .decode(labelBytes)
+        .replace(/\0/g, '')
+        .trim();
+      entries.push({ label: label || `type 0x${type.toString(16)}`, type, subtype, offset: addr, size });
+    }
+    return entries;
+  } catch (err) {
+    console.warn('Failed to read partition table', err);
+    return [];
+  }
 }
 
 function resolvePackageLabel(chipKey, pkgVersion, chipRevision) {
@@ -760,7 +789,6 @@ async function connect() {
         icon: FACT_ICONS[label] ?? null,
       });
     };
-
     const packageLabel = resolvePackageLabel(chipKey, packageVersion, chipRevision);
     pushFact('Chip Variant', packageLabel);
     const packageMatch = packageLabel?.match(/\(([^)]+)\)$/);
@@ -820,6 +848,20 @@ async function connect() {
       !Number.isNaN(blockVersionMinor)
     ) {
       pushFact('eFuse Block Version', `v${blockVersionMajor}.${blockVersionMinor}`);
+    }
+
+    const partitions = await readPartitionTable(loader.value);
+    if (partitions.length) {
+      const partitionPreview = partitions.slice(0, 3).map(p => {
+        const label = p.label || `type 0x${p.type.toString(16)}`;
+        const offsetHex = `0x${p.offset.toString(16).toUpperCase()}`;
+        const sizeText = formatBytes(p.size) ?? `${p.size} bytes`;
+        return `${label} @ ${offsetHex} (${sizeText})`;
+      });
+      const extraCount = partitions.length - partitionPreview.length;
+      const partitionSummary =
+        partitionPreview.join(', ') + (extraCount > 0 ? `, … (+${extraCount} more)` : '');
+      pushFact('Partition Table', partitionSummary);
     }
 
     if (portDetails) {
