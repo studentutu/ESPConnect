@@ -582,6 +582,66 @@ const partitionPalette = [
   '#ffc6ff',
 ];
 
+const PARTITION_TYPE_NAMES = {
+  0x00: 'Application',
+  0x01: 'Data',
+};
+
+const PARTITION_DATA_SUBTYPE_NAMES = {
+  0x00: 'OTA Data',
+  0x01: 'PHY Init Data',
+  0x02: 'NVS',
+  0x03: 'Core Dump',
+  0x04: 'NVS Keys',
+  0x05: 'EFuse Emulation',
+  0x06: 'Undefined Data',
+  0x80: 'ESPHTTPD Data',
+  0x81: 'FAT (FATFS)',
+  0x82: 'SPIFFS',
+  0x83: 'LittleFS',
+  0x84: 'Storage',
+  0x85: 'OTA Backup',
+  0x86: 'NimBLE Data',
+  0x87: 'Factory NVS',
+};
+
+function toPaddedHex(value) {
+  const hex = Number(value).toString(16).toUpperCase();
+  return `0x${hex.padStart(2, '0')}`;
+}
+
+function getPartitionTypeLabel(type) {
+  const hex = toPaddedHex(type ?? 0);
+  const name = PARTITION_TYPE_NAMES[type];
+  return name ? `${name} (${hex})` : `Type ${hex}`;
+}
+
+function getPartitionSubtypeLabel(type, subtype) {
+  const hex = toPaddedHex(subtype ?? 0);
+  let name;
+
+  if (type === 0x00) {
+    if (subtype === 0x00) {
+      name = 'Factory App';
+    } else if (subtype === 0x01) {
+      name = 'Test App';
+    } else if (subtype >= 0x10 && subtype <= 0x1f) {
+      name = `OTA ${subtype - 0x10}`;
+    } else if (subtype === 0x20) {
+      name = 'Any App';
+    } else if (subtype === 0x21) {
+      name = 'OTA App';
+    }
+  } else if (type === 0x01) {
+    name = PARTITION_DATA_SUBTYPE_NAMES[subtype];
+    if (!name && subtype >= 0x80 && subtype <= 0x9f) {
+      name = 'Custom Data';
+    }
+  }
+
+  return name ? `${name} (${hex})` : `Subtype ${hex}`;
+}
+
 const UNUSED_SEGMENT_COLOR = '#c62828';
 const UNUSED_SEGMENT_PATTERN =
   'repeating-linear-gradient(270deg, rgba(248, 113, 113, 0.65) 0px, rgba(248, 113, 113, 0.65) 12px, rgba(220, 38, 38, 0.65) 12px, rgba(220, 38, 38, 0.65) 24px)';
@@ -724,6 +784,8 @@ const partitionSegments = computed(() => {
         size: segment.size,
         typeHex: 'N/A',
         subtypeHex: 'N/A',
+        typeLabel: 'Not applicable',
+        subtypeLabel: 'Not applicable',
         isUnused: true,
         isReserved: false,
         showLabel,
@@ -746,6 +808,8 @@ const partitionSegments = computed(() => {
         size: segment.size,
         typeHex: 'N/A',
         subtypeHex: 'N/A',
+        typeLabel: 'Reserved',
+        subtypeLabel: 'Reserved',
         isUnused: false,
         isReserved: true,
         showLabel,
@@ -755,8 +819,10 @@ const partitionSegments = computed(() => {
     }
 
     const entry = segment.entry;
-    const typeHex = `0x${entry.type.toString(16).toUpperCase()}`;
-    const subtypeHex = `0x${entry.subtype.toString(16).toUpperCase()}`;
+    const typeHex = toPaddedHex(entry.type);
+    const subtypeHex = toPaddedHex(entry.subtype);
+    const typeLabel = getPartitionTypeLabel(entry.type);
+    const subtypeLabel = getPartitionSubtypeLabel(entry.type, entry.subtype);
     const normalizedLabel = (entry.label || '')
       .trim()
       .toLowerCase()
@@ -781,6 +847,8 @@ const partitionSegments = computed(() => {
       size: entry.size,
       typeHex,
       subtypeHex,
+      typeLabel,
+      subtypeLabel,
       isUnused: false,
       isReserved: false,
       showLabel,
@@ -789,7 +857,8 @@ const partitionSegments = computed(() => {
         `Size: ${sizeText}`,
         `Start: ${offsetHex}`,
         `End: ${endHex}`,
-        `Type/Subtype: ${typeHex} / ${subtypeHex}`,
+        `Type: ${typeLabel}`,
+        `Subtype: ${subtypeLabel}`,
       ],
     };
   });
@@ -805,8 +874,10 @@ const formattedPartitions = computed(() => {
 
   return partitionTable.value.map((entry, index) => {
     const segment = segmentByOffset.get(entry.offset);
-    const typeHex = `0x${entry.type.toString(16).toUpperCase()}`;
-    const subtypeHex = `0x${entry.subtype.toString(16).toUpperCase()}`;
+    const typeHex = toPaddedHex(entry.type);
+    const subtypeHex = toPaddedHex(entry.subtype);
+    const typeLabel = getPartitionTypeLabel(entry.type);
+    const subtypeLabel = getPartitionSubtypeLabel(entry.type, entry.subtype);
     const offsetHex = `0x${entry.offset.toString(16).toUpperCase()}`;
     const sizeText = formatBytes(entry.size) ?? `${entry.size} bytes`;
     const fallbackColor =
@@ -824,6 +895,8 @@ const formattedPartitions = computed(() => {
       ...entry,
       typeHex,
       subtypeHex,
+      typeLabel,
+      subtypeLabel,
       offsetHex,
       sizeText,
       color: segment?.color ?? fallbackColor,

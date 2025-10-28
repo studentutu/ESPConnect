@@ -76,11 +76,11 @@
                   backgroundImage: entry.backgroundImage || undefined,
                 }"
               ></span>
-              <span>{{ entry.label || '�?"' }}</span>
+              <span>{{ entry.label || 'Unnamed' }}</span>
             </div>
           </td>
-          <td>{{ entry.typeHex }}</td>
-          <td>{{ entry.subtypeHex }}</td>
+          <td>{{ entry.typeLabel }}</td>
+          <td>{{ entry.subtypeLabel }}</td>
           <td>{{ entry.offsetHex }}</td>
           <td>{{ entry.sizeText }}</td>
         </tr>
@@ -211,3 +211,4 @@ defineProps({
   color: color-mix(in srgb, var(--v-theme-on-surface) 60%, transparent);
 }
 </style>
+
