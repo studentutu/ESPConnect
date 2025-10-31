@@ -230,15 +230,31 @@ const featurePreview = computed(() => {
   border-radius: 20px;
   background: linear-gradient(
     135deg,
-    color-mix(in srgb, var(--v-theme-primary) 18%, transparent) 0%,
-    color-mix(in srgb, var(--v-theme-surface) 95%, transparent) 100%
+    color-mix(in srgb, var(--v-theme-primary) 22%, transparent) 0%,
+    color-mix(in srgb, var(--v-theme-surface) 96%, transparent) 55%,
+    color-mix(in srgb, var(--v-theme-secondary) 14%, transparent) 100%
   );
   border: 1px solid color-mix(in srgb, var(--v-theme-primary) 16%, transparent);
   overflow: hidden;
+  position: relative;
+}
+
+.device-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    circle at 12% 18%,
+    color-mix(in srgb, var(--v-theme-primary) 28%, transparent) 0%,
+    transparent 55%
+  );
+  opacity: 0.6;
+  pointer-events: none;
 }
 
 .device-card__body {
   padding: clamp(20px, 4vw, 36px);
+  position: relative;
 }
 
 .device-header {
@@ -305,7 +321,8 @@ const featurePreview = computed(() => {
   background: linear-gradient(
     140deg,
     color-mix(in srgb, var(--v-theme-surface) 92%, transparent) 0%,
-    color-mix(in srgb, var(--v-theme-primary) 12%, transparent) 100%
+    color-mix(in srgb, var(--v-theme-primary) 14%, transparent) 55%,
+    color-mix(in srgb, var(--v-theme-tertiary) 16%, transparent) 100%
   );
   position: relative;
   overflow: hidden;
@@ -316,7 +333,8 @@ const featurePreview = computed(() => {
   background: linear-gradient(
       140deg,
       color-mix(in srgb, var(--v-theme-primary) 22%, transparent) 0%,
-      color-mix(in srgb, var(--v-theme-surface) 96%, transparent) 100%
+      color-mix(in srgb, var(--v-theme-surface) 94%, transparent) 70%,
+      color-mix(in srgb, var(--v-theme-secondary) 14%, transparent) 100%
     ),
     linear-gradient(140deg, rgba(255, 255, 255, 0.08), transparent);
 }
@@ -325,9 +343,28 @@ const featurePreview = computed(() => {
   background: linear-gradient(
       140deg,
       color-mix(in srgb, var(--v-theme-secondary) 24%, transparent) 0%,
-      color-mix(in srgb, var(--v-theme-surface) 96%, transparent) 100%
+      color-mix(in srgb, var(--v-theme-surface) 94%, transparent) 70%,
+      color-mix(in srgb, var(--v-theme-primary) 12%, transparent) 100%
     ),
     linear-gradient(140deg, rgba(255, 255, 255, 0.04), transparent);
+}
+
+.highlight-card::after {
+  content: '';
+  position: absolute;
+  inset: 12% 18% auto auto;
+  width: 160px;
+  height: 160px;
+  border-radius: 999px;
+  background: radial-gradient(
+    circle,
+    rgba(255, 255, 255, 0.26) 0%,
+    rgba(255, 255, 255, 0.08) 45%,
+    transparent 70%
+  );
+  transform: translate(35%, -35%);
+  filter: blur(0.5px);
+  pointer-events: none;
 }
 
 .highlight-card__body {
@@ -368,7 +405,7 @@ const featurePreview = computed(() => {
   font-size: 0.76rem;
   letter-spacing: 0.16em;
   font-weight: 600;
-  opacity: 0.82;
+  opacity: 0.88;
 }
 
 .highlight-card__value {
@@ -379,7 +416,7 @@ const featurePreview = computed(() => {
 
 .highlight-card__meta {
   font-size: 0.9rem;
-  opacity: 0.8;
+  opacity: 0.86;
 }
 
 .highlight-card__footer,
@@ -402,6 +439,11 @@ const featurePreview = computed(() => {
   font-weight: 600;
   letter-spacing: 0.01em;
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--v-theme-on-primary) 18%, transparent);
+}
+
+.highlight-card__fact :deep(.v-icon) {
+  color: inherit;
+  opacity: 0.95;
 }
 
 .highlight-card--features .highlight-card__chips {
@@ -442,6 +484,7 @@ const featurePreview = computed(() => {
   font-weight: 600;
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--v-theme-on-secondary) 22%, transparent);
   backdrop-filter: blur(4px);
+  text-transform: capitalize;
 }
 
 .feature-chip--more {
@@ -468,8 +511,9 @@ const featurePreview = computed(() => {
   border: 1px solid color-mix(in srgb, var(--v-theme-primary) 12%, transparent);
   background: linear-gradient(
       150deg,
-      color-mix(in srgb, var(--v-theme-surface) 98%, transparent) 0%,
-      color-mix(in srgb, var(--v-theme-primary) 10%, transparent) 100%
+      color-mix(in srgb, var(--v-theme-surface) 99%, transparent) 0%,
+      color-mix(in srgb, var(--v-theme-primary) 12%, transparent) 55%,
+      color-mix(in srgb, var(--v-theme-secondary) 10%, transparent) 100%
     ),
     linear-gradient(150deg, rgba(255, 255, 255, 0.04), transparent);
   box-shadow: 0 18px 34px rgba(15, 23, 42, 0.12);
@@ -509,7 +553,11 @@ const featurePreview = computed(() => {
   gap: 12px 18px;
   padding: 12px 14px;
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.14);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--v-theme-primary) 16%, transparent) 0%,
+    color-mix(in srgb, var(--v-theme-surface) 96%, transparent) 65%
+  );
   backdrop-filter: blur(14px);
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
 }
@@ -521,6 +569,11 @@ const featurePreview = computed(() => {
   color: color-mix(in srgb, var(--v-theme-on-surface) 80%, transparent);
   font-size: 0.87rem;
   letter-spacing: 0.01em;
+}
+
+.detail-card__item-label :deep(.v-icon) {
+  color: inherit;
+  opacity: 0.9;
 }
 
 .detail-card__item-value {
