@@ -1,21 +1,17 @@
 <template>
   <v-expand-transition v-if="details">
     <div class="device-info-wrapper">
-      <v-card class="device-card" elevation="0" variant="flat">
+      <v-card class="device-card" elevation="0" prepend-icon="mdi-chip">
+        <template v-slot:title>
+          <span class="font-weight-black">{{ details.description || details.name }}</span>
+        </template>
         <v-card-text class="device-card__body">
           <div class="device-header">
-            <v-avatar class="device-avatar" size="60">
-              <v-icon size="38">mdi-chip</v-icon>
-            </v-avatar>
             <div class="device-header__text">
-              <div class="device-chip-name">{{ details.description || details.name }}</div>
               <div v-if="hasDistinctDescription" class="device-chip-alias">
                 {{ details.name }}
               </div>
-              <div
-                v-if="revisionLabel || details.mac"
-                class="device-chip-subline"
-              >
+              <div v-if="revisionLabel || details.mac" class="device-chip-subline">
                 <span v-if="revisionLabel" class="device-chip-subline-item">
                   <v-icon size="20">mdi-update</v-icon>
                   {{ revisionLabel }}
@@ -27,71 +23,58 @@
               </div>
             </div>
           </div>
-        <v-card class="device-summary-card" elevation="0" variant="flat">
-          <v-card-text class="device-summary-card__content">
-            <div class="device-summary">
-            <div class="summary-block">
-              <div class="summary-label">
-                <v-icon size="20" class="me-2">mdi-memory</v-icon>
-                Flash & Clock
-              </div>
-              <div class="summary-value">{{ details.flashSize || 'Unknown' }}</div>
-              <div v-if="details.crystal" class="summary-meta">
-                Crystal {{ details.crystal }}
-              </div>
-              <div v-if="primaryFacts.length" class="summary-list">
-                <div
-                  v-for="fact in primaryFacts"
-                  :key="fact.label"
-                  class="summary-list__item"
-                >
-                  <v-icon size="16" class="me-1">{{ fact.icon || 'mdi-information-outline' }}</v-icon>
-                  <span>{{ fact.value }}</span>
+          <v-card class="device-summary-card" elevation="0" variant="flat">
+            <v-card-text class="device-summary-card__content">
+              <div class="device-summary">
+                <div class="summary-block">
+                  <div class="summary-label">
+                    <v-icon size="20" class="me-2">mdi-memory</v-icon>
+                    Flash & Clock
+                  </div>
+                  <div class="summary-value">{{ details.flashSize || 'Unknown' }}</div>
+                  <div v-if="details.crystal" class="summary-meta">
+                    Crystal {{ details.crystal }}
+                  </div>
+                  <div v-if="primaryFacts.length" class="summary-list">
+                    <div v-for="fact in primaryFacts" :key="fact.label" class="summary-list__item">
+                      <v-icon size="16" class="me-1">{{ fact.icon || 'mdi-information-outline' }}</v-icon>
+                      <span>{{ fact.value }}</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="summary-divider" role="presentation" />
+                <div class="summary-block">
+                  <div class="summary-label">
+                    <v-icon size="20" class="me-2">mdi-lightning-bolt-outline</v-icon>
+                    Feature Set
+                  </div>
+                  <div class="summary-value">
+                    {{ hasFeatures ? `${details.features.length} capabilities` : 'No features reported' }}
+                  </div>
+                  <div v-if="details.mac" class="summary-meta">
+                    MAC {{ details.mac }}
+                  </div>
+                  <div class="summary-chips">
+                    <template v-if="hasFeatures">
+                      <v-chip v-for="feature in featurePreview" :key="feature" class="summary-chip" size="small"
+                        variant="flat">
+                        <v-icon size="14" start>mdi-check-circle</v-icon>
+                        {{ feature }}
+                      </v-chip>
+                      <v-chip v-if="details.features.length > featurePreview.length"
+                        class="summary-chip summary-chip--more" size="small" variant="outlined">
+                        +{{ details.features.length - featurePreview.length }} more
+                      </v-chip>
+                    </template>
+                    <div v-else class="summary-empty">
+                      <v-icon size="16">mdi-eye-off-outline</v-icon>
+                      <span>No optional capabilities.</span>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-            <div class="summary-divider" role="presentation" />
-            <div class="summary-block">
-              <div class="summary-label">
-                <v-icon size="20" class="me-2">mdi-lightning-bolt-outline</v-icon>
-                Feature Set
-              </div>
-              <div class="summary-value">
-                {{ hasFeatures ? `${details.features.length} capabilities` : 'No features reported' }}
-              </div>
-              <div v-if="details.mac" class="summary-meta">
-                MAC {{ details.mac }}
-              </div>
-              <div class="summary-chips">
-                <template v-if="hasFeatures">
-                  <v-chip
-                    v-for="feature in featurePreview"
-                    :key="feature"
-                    class="summary-chip"
-                    size="small"
-                    variant="flat"
-                  >
-                    <v-icon size="14" start>mdi-check-circle</v-icon>
-                    {{ feature }}
-                  </v-chip>
-                  <v-chip
-                    v-if="details.features.length > featurePreview.length"
-                    class="summary-chip summary-chip--more"
-                    size="small"
-                    variant="outlined"
-                  >
-                    +{{ details.features.length - featurePreview.length }} more
-                  </v-chip>
-                </template>
-                <div v-else class="summary-empty">
-                  <v-icon size="16">mdi-eye-off-outline</v-icon>
-                  <span>No optional capabilities.</span>
-                </div>
-              </div>
-            </div>
-            </div>
-          </v-card-text>
-        </v-card>
+            </v-card-text>
+          </v-card>
 
           <div v-if="details.factGroups?.length" class="detail-groups">
             <div class="section-title mb-3">
@@ -99,12 +82,7 @@
               Hardware Details
             </div>
             <v-row dense class="detail-group-row">
-              <v-col
-                v-for="group in details.factGroups"
-                :key="group.title"
-                cols="12"
-                md="6"
-              >
+              <v-col v-for="group in details.factGroups" :key="group.title" cols="12" md="6">
                 <v-card class="detail-card" elevation="0" variant="tonal">
                   <v-card-title class="detail-card__title">
                     <v-icon size="18" class="me-2">{{ group.icon }}</v-icon>
@@ -112,11 +90,7 @@
                   </v-card-title>
                   <v-divider class="detail-card__divider" />
                   <v-card-text class="detail-card__body">
-                    <div
-                      v-for="fact in group.items"
-                      :key="fact.label"
-                      class="detail-card__item"
-                    >
+                    <div v-for="fact in group.items" :key="fact.label" class="detail-card__item">
                       <div class="detail-card__item-label">
                         <v-icon v-if="fact.icon" size="16" class="me-2">{{ fact.icon }}</v-icon>
                         <span>{{ fact.label }}</span>
@@ -235,12 +209,10 @@ const featurePreview = computed(() => {
 
 .device-card {
   border-radius: 20px;
-  background: linear-gradient(
-    135deg,
-    color-mix(in srgb, var(--v-theme-primary) 22%, transparent) 0%,
-    color-mix(in srgb, var(--v-theme-surface) 96%, transparent) 55%,
-    color-mix(in srgb, var(--v-theme-secondary) 14%, transparent) 100%
-  );
+  background: linear-gradient(135deg,
+      color-mix(in srgb, var(--v-theme-primary) 22%, transparent) 0%,
+      color-mix(in srgb, var(--v-theme-surface) 96%, transparent) 55%,
+      color-mix(in srgb, var(--v-theme-secondary) 14%, transparent) 100%);
   border: 1px solid color-mix(in srgb, var(--v-theme-primary) 16%, transparent);
   overflow: hidden;
   position: relative;
@@ -250,11 +222,9 @@ const featurePreview = computed(() => {
   content: '';
   position: absolute;
   inset: 0;
-  background: radial-gradient(
-    circle at 12% 18%,
-    color-mix(in srgb, var(--v-theme-primary) 28%, transparent) 0%,
-    transparent 55%
-  );
+  background: radial-gradient(circle at 12% 18%,
+      color-mix(in srgb, var(--v-theme-primary) 28%, transparent) 0%,
+      transparent 55%);
   opacity: 0.6;
   pointer-events: none;
 }
@@ -371,11 +341,9 @@ const featurePreview = computed(() => {
 .device-summary-card {
   border-radius: 18px;
   border: 1px solid color-mix(in srgb, var(--v-theme-primary) 14%, transparent);
-  background: linear-gradient(
-      150deg,
+  background: linear-gradient(150deg,
       color-mix(in srgb, var(--v-theme-surface) 96%, transparent) 0%,
-      color-mix(in srgb, var(--v-theme-primary) 10%, transparent) 65%
-    ),
+      color-mix(in srgb, var(--v-theme-primary) 10%, transparent) 65%),
     linear-gradient(150deg, rgba(255, 255, 255, 0.04), transparent);
   margin-bottom: clamp(16px, 3vw, 28px);
 }
@@ -492,12 +460,10 @@ const featurePreview = computed(() => {
 .detail-card {
   border-radius: 20px;
   border: 1px solid color-mix(in srgb, var(--v-theme-primary) 12%, transparent);
-  background: linear-gradient(
-      150deg,
+  background: linear-gradient(150deg,
       color-mix(in srgb, var(--v-theme-surface) 99%, transparent) 0%,
       color-mix(in srgb, var(--v-theme-primary) 12%, transparent) 55%,
-      color-mix(in srgb, var(--v-theme-secondary) 10%, transparent) 100%
-    ),
+      color-mix(in srgb, var(--v-theme-secondary) 10%, transparent) 100%),
     linear-gradient(150deg, rgba(255, 255, 255, 0.04), transparent);
   box-shadow: 0 18px 34px rgba(15, 23, 42, 0.12);
   height: 100%;
@@ -536,11 +502,9 @@ const featurePreview = computed(() => {
   gap: 12px 18px;
   padding: 12px 14px;
   border-radius: 14px;
-  background: linear-gradient(
-    135deg,
-    color-mix(in srgb, var(--v-theme-primary) 16%, transparent) 0%,
-    color-mix(in srgb, var(--v-theme-surface) 96%, transparent) 65%
-  );
+  background: linear-gradient(135deg,
+      color-mix(in srgb, var(--v-theme-primary) 16%, transparent) 0%,
+      color-mix(in srgb, var(--v-theme-surface) 96%, transparent) 65%);
   backdrop-filter: blur(14px);
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
 }
