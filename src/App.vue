@@ -185,6 +185,38 @@
           </v-card>
         </v-dialog>
 
+        <v-dialog :model-value="spiffsLoadingDialog.visible" persistent max-width="420" class="progress-dialog">
+          <v-card>
+            <v-card-title class="text-h6">
+              <v-icon start color="primary">mdi-folder-sync</v-icon>
+              Loading SPIFFS
+            </v-card-title>
+            <v-card-text class="progress-dialog__body">
+              <div class="progress-dialog__label">
+                {{ spiffsLoadingDialog.label }}
+              </div>
+              <v-progress-linear indeterminate height="24" color="primary" rounded />
+            </v-card-text>
+          </v-card>
+        </v-dialog>
+
+        <v-dialog :model-value="spiffsSaveDialog.visible" persistent max-width="420" class="progress-dialog">
+          <v-card>
+            <v-card-title class="text-h6">
+              <v-icon start color="primary">mdi-floppy</v-icon>
+              Saving SPIFFS
+            </v-card-title>
+            <v-card-text class="progress-dialog__body">
+              <div class="progress-dialog__label">
+                {{ spiffsSaveDialog.label || 'Writing SPIFFS image...' }}
+              </div>
+              <v-progress-linear :model-value="spiffsSaveDialog.value" height="24" color="primary" rounded>
+                <strong>{{ Math.min(100, Math.max(0, Math.floor(spiffsSaveDialog.value))) }}%</strong>
+              </v-progress-linear>
+            </v-card-text>
+          </v-card>
+        </v-dialog>
+
         <v-dialog v-model="showBootDialog" width="420">
           <v-card>
             <v-card-title class="text-h6">
@@ -654,6 +686,8 @@ async function loadSpiffsPartition(partition) {
   spiffsState.readOnly = false;
   spiffsState.readOnlyReason = '';
   spiffsState.status = `Reading SPIFFS @ 0x${partition.offset.toString(16).toUpperCase()}...`;
+  spiffsLoadingDialog.visible = true;
+  spiffsLoadingDialog.label = `Reading ${partition.label || 'SPIFFS'}...`;
   try {
     await releaseTransportReader();
     const image = await loader.value.readFlash(partition.offset, partition.size);
@@ -664,12 +698,12 @@ async function loadSpiffsPartition(partition) {
       spiffsState.error = formatErrorMessage(error);
       spiffsState.readOnly = true;
       spiffsState.readOnlyReason = 'SPIFFS image unreadable (possibly encrypted).';
-      spiffsState.status = 'SPIFFS is read-only.';
-      spiffsState.client = null;
-      spiffsState.files = [];
-      spiffsState.baselineFiles = [];
-      return;
-    }
+    spiffsState.status = 'SPIFFS is read-only.';
+    spiffsState.client = null;
+    spiffsState.files = [];
+    spiffsState.baselineFiles = [];
+    return;
+  }
     spiffsState.client = client;
     spiffsState.files = await client.list();
     spiffsState.baselineFiles = spiffsState.files.map(file => ({
@@ -689,6 +723,7 @@ async function loadSpiffsPartition(partition) {
     spiffsState.status = 'Failed to read SPIFFS.';
   } finally {
     spiffsState.loading = false;
+    spiffsLoadingDialog.visible = false;
   }
 }
 
@@ -964,6 +999,7 @@ async function handleSpiffsSave() {
   try {
     spiffsState.saving = true;
     maintenanceBusy.value = true;
+    spiffsSaveDialog.visible = true;
     const image = await spiffsState.client.toImage();
     if (image.length > partition.size) {
       throw new Error('SPIFFS image exceeds partition size.');
@@ -979,6 +1015,9 @@ async function handleSpiffsSave() {
   } finally {
     spiffsState.saving = false;
     maintenanceBusy.value = false;
+    spiffsSaveDialog.visible = false;
+    spiffsSaveDialog.value = 0;
+    spiffsSaveDialog.label = 'Saving SPIFFS...';
   }
 }
 
@@ -996,7 +1035,10 @@ async function writeSpiffsImage(partition, image) {
     eraseAll: false,
     compress: true,
     reportProgress: (_fileIndex, written, total) => {
+      const progressValue = total ? Math.min(100, Math.floor((written / total) * 100)) : 0;
       spiffsState.status = `Writing SPIFFS... ${written.toLocaleString()} / ${total.toLocaleString()} bytes`;
+      spiffsSaveDialog.value = progressValue;
+      spiffsSaveDialog.label = `Writing SPIFFS... ${written.toLocaleString()} / ${total.toLocaleString()} bytes`;
     },
   });
 }
@@ -1172,6 +1214,16 @@ const spiffsBackupDialog = reactive({
   visible: false,
   value: 0,
   label: '',
+});
+const spiffsLoadingDialog = reactive({
+  visible: false,
+  value: 0,
+  label: 'Reading SPIFFS...',
+});
+const spiffsSaveDialog = reactive({
+  visible: false,
+  value: 0,
+  label: 'Saving SPIFFS...',
 });
 const spiffsPartitions = computed(() =>
   partitionTable.value
