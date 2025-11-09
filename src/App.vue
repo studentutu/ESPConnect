@@ -1003,7 +1003,7 @@ async function loadLittlefsPartition(partition) {
   try {
     await releaseTransportReader();
     const image = await readFlashToBuffer(partition.offset, partition.size, {
-      label: partition.label || 'LittleFS',
+      label: `${partition.label || 'LittleFS'}${littlefsBaudLabel}`,
       cancelSignal: littlefsLoadCancelRequested,
       onProgress: progress => {
         littlefsLoadingDialog.label = progress.label;
@@ -1566,7 +1566,7 @@ async function loadFatfsPartition(partition) {
   try {
     await releaseTransportReader();
     const image = await readFlashToBuffer(partition.offset, partition.size, {
-      label: partition.label || 'FATFS',
+      label: `${partition.label || 'FATFS'}${baudLabel}`,
       cancelSignal: fatfsLoadCancelRequested,
       onProgress: progress => {
         fatfsLoadingDialog.label = progress.label;
@@ -2359,7 +2359,7 @@ async function loadSpiffsPartition(partition) {
   try {
     await releaseTransportReader();
     const image = await readFlashToBuffer(partition.offset, partition.size, {
-      label: partition.label || 'SPIFFS',
+      label: `${partition.label || 'SPIFFS'}${spiffsBaudLabel}`,
       cancelSignal: spiffsLoadCancelRequested,
       onProgress: progress => {
         spiffsLoadingDialog.label = progress.label;
