@@ -4987,6 +4987,7 @@ async function connect() {
       romBaudrate: DEFAULT_ROM_BAUD,
       terminal,
       enableTracing: DEBUG_SERIAL,
+      debugLogging:true
     });
     currentBaud.value = connectBaud;
     transport.value.baudrate = connectBaud;
