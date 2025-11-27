@@ -5026,7 +5026,7 @@ async function connect() {
       transport: transport.value,
       baudrate: connectBaud,
       terminal,
-      debugLogging: true
+      debugLogging: false
     });
     currentBaud.value = connectBaud;
     transport.value.baudrate = connectBaud;
