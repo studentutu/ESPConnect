@@ -565,6 +565,7 @@ import DisconnectedState from './components/DisconnectedState.vue';
 import registerGuides from './data/register-guides.json';
 import { InMemorySpiffsClient } from './utils/spiffs/spiffsClient';
 import { createConnection, requestSerialPort } from './services/connectionService';
+import { useFatfsManager, useLittlefsManager, useSpiffsManager } from './composables/useFilesystemManagers';
 import { readPartitionTable } from './utils/partitions';
 
 const APP_VERSION = '1.03';
@@ -3136,9 +3137,31 @@ const baudChangeBusy = ref(false);
 const maintenanceBusy = ref(false);
 const downloadProgress = reactive({ visible: false, value: 0, label: '' });
 const downloadCancelRequested = ref(false);
-const littlefsLoadCancelRequested = ref(false);
-const fatfsLoadCancelRequested = ref(false);
-const spiffsLoadCancelRequested = ref(false);
+const {
+  spiffsState,
+  spiffsLoadCancelRequested,
+  spiffsBackupDialog,
+  spiffsLoadingDialog,
+  spiffsSaveDialog,
+  spiffsRestoreDialog,
+  spiffsViewerDialog,
+} = useSpiffsManager();
+const {
+  littlefsState,
+  littlefsLoadCancelRequested,
+  littlefsBackupDialog,
+  littlefsLoadingDialog,
+  littlefsSaveDialog,
+  littlefsRestoreDialog,
+} = useLittlefsManager(LITTLEFS_DEFAULT_BLOCK_SIZE);
+const {
+  fatfsState,
+  fatfsLoadCancelRequested,
+  fatfsBackupDialog,
+  fatfsLoadingDialog,
+  fatfsSaveDialog,
+  fatfsRestoreDialog,
+} = useFatfsManager(FATFS_DEFAULT_BLOCK_SIZE);
 const registerAddress = ref('0x0');
 const registerValue = ref('');
 const registerReadResult = ref(null);
@@ -3174,113 +3197,17 @@ const appMetadataError = ref(null);
 const activeAppSlotId = ref(null);
 const appActiveSummary = ref('Active slot unknown.');
 const appMetadataLoaded = ref(false);
-const spiffsState = reactive({
-  selectedId: null,
-  files: [],
-  status: 'Load a SPIFFS partition to begin.',
-  loading: false,
-  busy: false,
-  saving: false,
-  error: null,
-  client: null,
-  readOnly: false,
-  readOnlyReason: '',
-  dirty: false,
-  backupDone: false,
-  sessionBackupDone: false,
-  loadCancelled: false,
-  diagnostics: [],
-  baselineFiles: [],
-  usage: {
-    capacityBytes: 0,
-    usedBytes: 0,
-    freeBytes: 0,
-  },
-  uploadBlocked: false,
-  uploadBlockedReason: '',
-});
-const spiffsBackupDialog = reactive({
-  visible: false,
-  value: 0,
-  label: '',
-});
 const connectDialog = reactive({
   visible: false,
   label: 'Connecting...',
   message: '',
 });
 let connectDialogTimer = null;
-const spiffsLoadingDialog = reactive({
-  visible: false,
-  value: 0,
-  label: 'Reading SPIFFS...',
-});
-const spiffsSaveDialog = reactive({
-  visible: false,
-  value: 0,
-  label: 'Saving SPIFFS...',
-});
-const spiffsRestoreDialog = reactive({
-  visible: false,
-  value: 0,
-  label: 'Restoring SPIFFS image...',
-});
-const spiffsViewerDialog = reactive({
-  visible: false,
-  name: '',
-  content: '',
-  error: null,
-  loading: false,
-  mode: null,
-  imageUrl: '',
-  audioUrl: '',
-  source: 'spiffs',
-});
 const toast = reactive({
   visible: false,
   message: '',
   color: 'warning',
   timeout: 4000,
-});
-const littlefsBackupDialog = reactive({
-  visible: false,
-  value: 0,
-  label: '',
-});
-const littlefsLoadingDialog = reactive({
-  visible: false,
-  value: 0,
-  label: 'Reading LittleFS...',
-});
-const littlefsSaveDialog = reactive({
-  visible: false,
-  value: 0,
-  label: 'Saving LittleFS...',
-});
-const littlefsRestoreDialog = reactive({
-  visible: false,
-  value: 0,
-  label: 'Restoring LittleFS image...',
-});
-const fatfsBackupDialog = reactive({
-  visible: false,
-  value: 0,
-  label: '',
-});
-const fatfsLoadingDialog = reactive({
-  visible: false,
-  value: 0,
-  label: 'Reading FATFS...',
-});
-const fatfsSaveDialog = reactive({
-  visible: false,
-  value: 0,
-  label: 'Saving FATFS...',
-});
-const fatfsRestoreDialog = reactive({
-  visible: false,
-  value: 0,
-  label: 'Restoring FATFS image...',
 });
 const spiffsPartitions = computed(() =>
   partitionTable.value
@@ -3330,32 +3257,6 @@ const littleFsPartitions = computed(() =>
     })),
 );
 const littleFsAvailable = computed(() => littleFsPartitions.value.length > 0);
-const littlefsState = reactive({
-  selectedId: null,
-  client: null,
-  files: [],
-  status: 'Load a LittleFS partition to begin.',
-  loading: false,
-  busy: false,
-  saving: false,
-  error: null,
-  readOnly: false,
-  readOnlyReason: '',
-  dirty: false,
-  backupDone: false,
-  sessionBackupDone: false,
-  loadCancelled: false,
-  usage: {
-    capacityBytes: 0,
-    usedBytes: 0,
-    freeBytes: 0,
-  },
-  baselineFiles: [],
-  uploadBlocked: false,
-  uploadBlockedReason: '',
-  blockSize: LITTLEFS_DEFAULT_BLOCK_SIZE,
-  blockCount: 0,
-});
 const fatfsPartitions = computed(() =>
   partitionTable.value
     .filter(entry => {
@@ -3377,32 +3278,6 @@ const fatfsPartitions = computed(() =>
     })),
 );
 const fatfsAvailable = computed(() => fatfsPartitions.value.length > 0);
-const fatfsState = reactive({
-  selectedId: null,
-  client: null,
-  files: [],
-  status: 'Load a FATFS partition to begin.',
-  loading: false,
-  busy: false,
-  saving: false,
-  error: null,
-  readOnly: false,
-  readOnlyReason: '',
-  dirty: false,
-  backupDone: false,
-  sessionBackupDone: false,
-  loadCancelled: false,
-  usage: {
-    capacityBytes: 0,
-    usedBytes: 0,
-    freeBytes: 0,
-  },
-  baselineFiles: [],
-  uploadBlocked: false,
-  uploadBlockedReason: '',
-  blockSize: FATFS_DEFAULT_BLOCK_SIZE,
-  blockCount: 0,
-});
 const littlefsSelectedPartition = computed(() =>
   littleFsPartitions.value.find(partition => partition.id === littlefsState.selectedId) ?? null,
 );
