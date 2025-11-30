@@ -1156,7 +1156,8 @@ function handleLittlefsUploadSelection(file) {
   littlefsState.uploadBlockedReason = '';
 }
 
-async function handleLittlefsUpload({ file, path, isDir }) {
+async function handleLittlefsUpload(payload) {
+  const { file, path, isDir } = payload || {};
   if (!littlefsState.client) return;
   if (littlefsState.readOnly) {
     littlefsState.status = littlefsState.readOnlyReason || 'LittleFS is read-only.';
@@ -1170,12 +1171,23 @@ async function handleLittlefsUpload({ file, path, isDir }) {
     }
     return;
   }
+  const partition = littlefsSelectedPartition.value;
+  const partitionSize = partition?.size ?? littlefsState.blockSize * littlefsState.blockCount;
+  const usedBytes = littlefsState.files.reduce((sum, entry) => sum + (entry.size ?? 0), 0);
+  const bundleTotal = payload?.bundleTotal ?? 0;
+  if (partitionSize && bundleTotal > 0 && bundleTotal > partitionSize - usedBytes) {
+    const message =
+      'Not enough LittleFS space for this upload. Delete files or format the partition, then try again.';
+    littlefsState.uploadBlocked = true;
+    littlefsState.uploadBlockedReason = message;
+    littlefsState.status = message;
+    showUploadError(message);
+    return;
+  }
   if (!file) {
     if (isDir && path) {
       await handleLittlefsNewFolder(path);
     }
-    littlefsState.status = 'Select a file to upload.';
-    showToast(littlefsState.status, { color: 'info' });
     return;
   }
   const targetName = (file.name || '').trim();
@@ -1184,13 +1196,27 @@ async function handleLittlefsUpload({ file, path, isDir }) {
     showToast(littlefsState.status, { color: 'warning' });
     return;
   }
+  // size check using handleLittlefsUploadSelection logic
+  const targetPath = joinFsPath(littlefsState.currentPath || '/', path || targetName);
+  const existingSize = littlefsState.files.find(entry => entry.path === targetPath)?.size ?? 0;
+  const availableBytes = partitionSize ? partitionSize - usedBytes + existingSize : 0;
+  if (partitionSize && file.size > availableBytes) {
+    const message =
+      'Not enough LittleFS space for this upload. Delete files or format the partition, then try again.';
+    littlefsState.uploadBlocked = true;
+    littlefsState.uploadBlockedReason = message;
+    littlefsState.status = message;
+    showUploadError(message);
+    return;
+  }
+
   try {
     littlefsState.busy = true;
     const data = new Uint8Array(await file.arrayBuffer());
     const relativePath = path || targetName;
-    const targetPath = joinFsPath(littlefsState.currentPath || '/', relativePath);
+    const target = joinFsPath(littlefsState.currentPath || '/', relativePath);
     // ensure parent directories
-    const segments = targetPath.split('/').filter(Boolean);
+    const segments = target.split('/').filter(Boolean);
     let built = '';
     if (segments.length > 1 && typeof littlefsState.client.mkdir === 'function') {
       for (let i = 0; i < segments.length - 1; i++) {
@@ -1203,13 +1229,13 @@ async function handleLittlefsUpload({ file, path, isDir }) {
       }
     }
     if (typeof littlefsState.client.writeFile === 'function') {
-      littlefsState.client.writeFile(targetPath, data);
+      littlefsState.client.writeFile(target, data);
     } else if (typeof littlefsState.client.addFile === 'function') {
-      littlefsState.client.addFile(targetPath, data);
+      littlefsState.client.addFile(target, data);
     }
     await refreshLittlefsListing();
-    markLittlefsDirty(`Staged ${targetPath}. Remember to Save.`);
-    appendLog(`LittleFS staged ${targetPath} (${data.length.toLocaleString()} bytes).`, '[ESPConnect-Debug]');
+    markLittlefsDirty(`Staged ${target}. Remember to Save.`);
+    appendLog(`LittleFS staged ${target} (${data.length.toLocaleString()} bytes).`, '[ESPConnect-Debug]');
   } catch (error) {
     littlefsState.error = formatErrorMessage(error);
     showToast(littlefsState.error, { color: 'error' });

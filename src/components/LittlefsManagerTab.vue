@@ -410,12 +410,15 @@ function handleDrop(event) {
 
 async function processDroppedItems(items) {
   const uploadEntries = [];
+  const filesForSizeCheck = [];
 
   async function traverseEntry(entry, pathPrefix = '') {
     if (!entry) return;
     if (entry.isFile) {
       const file = await new Promise(resolve => entry.file(resolve));
-      uploadEntries.push({ file, path: pathPrefix ? `${pathPrefix}/${file.name}` : file.name });
+      const relPath = pathPrefix ? `${pathPrefix}/${file.name}` : file.name;
+      uploadEntries.push({ file, path: relPath });
+      filesForSizeCheck.push({ size: file.size, path: relPath });
     } else if (entry.isDirectory) {
       const reader = entry.createReader();
       const entries = await new Promise((resolve, reject) => {
@@ -423,7 +426,6 @@ async function processDroppedItems(items) {
       });
       const prefix = pathPrefix ? `${pathPrefix}/${entry.name}` : entry.name;
       if (!entries.length) {
-        // empty folder: create via upload-file with a placeholder path (handled upstream as mkdir)
         uploadEntries.push({ file: null, path: prefix, isDir: true });
       }
       for (const child of entries) {
@@ -438,12 +440,17 @@ async function processDroppedItems(items) {
       await traverseEntry(entry);
     } else {
       const file = item.getAsFile();
-      if (file) uploadEntries.push({ file, path: file.name });
+      if (file) {
+        uploadEntries.push({ file, path: file.name });
+        filesForSizeCheck.push({ size: file.size, path: file.name });
+      }
     }
   }
 
+  const totalSize = filesForSizeCheck.reduce((sum, f) => sum + (f.size || 0), 0);
+
   for (const entry of uploadEntries) {
-    emit('upload-file', entry);
+    emit('upload-file', { ...entry, bundleTotal: totalSize });
   }
 }
 
