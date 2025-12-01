@@ -1265,7 +1265,7 @@ async function performLittlefsUpload(payload) {
     console.warn('[ESPConnect-LittleFS] upload blocked file', {
       targetPath,
       size: file.size,
-      existingSize,
+      existingSize: existingEntry?.size ?? 0,
       availableBytes,
       freeBytes: workingFreeBytes,
     });
@@ -1397,13 +1397,22 @@ async function handleLittlefsNavigateUp() {
 
 async function handleLittlefsNewFolder() {
   if (!littlefsState.client || littlefsState.readOnly) return;
-  const name = arguments[0] || prompt('New folder name');
+  const name = (arguments[0] || prompt('New folder name'))?.toString().trim();
   if (!name) return;
   if (name.includes('/') || name.includes('..')) {
     showToast('Folder name cannot contain slashes or "..".', { color: 'warning' });
     return;
   }
   const targetPath = joinFsPath(littlefsState.currentPath || '/', name);
+  const existingDir =
+    littlefsState.allFiles?.find(entry => entry.path === targetPath && entry.type === 'dir') ||
+    littlefsState.files.find(entry => entry.path === targetPath && entry.type === 'dir');
+  if (existingDir) {
+    const msg = `Folder "${name}" already exists here.`;
+    showToast(msg, { color: 'warning' });
+    littlefsState.status = msg;
+    return;
+  }
   try {
     littlefsState.busy = true;
     if (typeof littlefsState.client.mkdir === 'function') {
