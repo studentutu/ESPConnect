@@ -124,7 +124,7 @@
                 <div class="filesystem-dropzone__hint">
                   <v-icon size="32">mdi-cloud-upload-outline</v-icon>
                   <div class="filesystem-dropzone__hint-text">
-                    <strong>Drop files to add</strong>
+                    <strong>Drop files or a folder to add</strong>
                   </div>
                 </div>
               </div>
