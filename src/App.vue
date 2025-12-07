@@ -5128,11 +5128,23 @@ async function connect() {
     connectDialogTimer = setTimeout(() => {
       connectDialog.visible = true;
     }, TIMEOUT_CONNECT);
-    const desiredBaud = Number.parseInt(selectedBaud.value, 10) || DEFAULT_FLASH_BAUD;
+    let desiredBaud = Number.parseInt(selectedBaud.value, 10) || DEFAULT_FLASH_BAUD;
     const connectBaud = DEFAULT_ROM_BAUD;
     lastFlashBaud.value = desiredBaud;
     const portDetails = currentPort.value?.getInfo ? currentPort.value.getInfo() : null;
     const usbBridge = portDetails ? formatUsbBridge(portDetails) : "Unknown";
+    if (usbBridge && /ch340/i.test(usbBridge) && desiredBaud > 460800) {
+      desiredBaud = 460800;
+      lastFlashBaud.value = desiredBaud;
+      const previousSuspendState = suspendBaudWatcher;
+      suspendBaudWatcher = true;
+      selectedBaud.value = String(desiredBaud);
+      queueMicrotask(() => {
+        suspendBaudWatcher = previousSuspendState;
+      });
+      showToast('Detected CH340 bridge; lowering baud to 460,800 for stability.', { color: 'warning' });
+      appendLog('Detected CH340 bridge; lowering baud to 460,800 bps.', '[ESPConnect-Debug]');
+    }
 
     const esptool = createEsptoolClient({
       port: currentPort.value,
