@@ -526,11 +526,14 @@
         </v-dialog>
 
         <v-dialog v-model="showBootDialog" width="420">
-          <v-card>
+          <v-card >
             <v-card-title class="text-h6">
               <v-icon start color="warning">mdi-alert-circle-outline</v-icon>
               Connection Tips
             </v-card-title>
+            <v-card-subtitle>
+              Last error: {{ lastErrorMessage }}
+            </v-card-subtitle>
             <v-card-text>
               <p class="text-body-2">
                 We couldn't communicate with the board. Try putting your ESP32 into bootloader mode:
@@ -541,9 +544,6 @@
                 <li>While still holding BOOT, click <strong>Connect</strong>.</li>
                 <li>Release the BOOT button once the log shows the ESP-ROM banner or the connection completes.</li>
               </ol>
-              <p class="text-caption text-medium-emphasis" v-if="lastErrorMessage">
-                Last error: {{ lastErrorMessage }}
-              </p>
             </v-card-text>
             <v-card-actions>
               <v-spacer />
