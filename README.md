@@ -9,8 +9,9 @@
 ESPConnect 是一个基于浏览器的 ESP32 和 ESP8266 系列开发板控制中心。它完全在现代 Chromium 浏览器中运行，无需安装桌面软件即可检查硬件详情、管理 SPIFFS/LittleFS/FATFS 文件、备份 Flash 和部署固件。本项目基于 Jason2866 的 [WebSerial ESPTool](https://github.com/Jason2866/WebSerial_ESPTool/tree/development)。
 
 - [视频教程 - Original Youtube](https://youtu.be/-nhDKzBxHiI)
-- [在线应用 - Original Website](https://thelastoutpostworkshop.github.io/microcontroller_devkit/espconnect/)
+- [原版网页 - Original Website](https://thelastoutpostworkshop.github.io/microcontroller_devkit/espconnect/)
 - [原版项目 - Original Project](https://github.com/thelastoutpostworkshop/ESPConnect)
+- [中文网页 - Chinese Website](https://ikalyes.github.io/ESPConnect-CHN/)
 
 ---
 
@@ -133,6 +134,7 @@ export const skipPatterns = [
 ## 快速开始
 
 1. 打开（官方英文版） [ESPConnect - Original Website None Translated](https://thelastoutpostworkshop.github.io/microcontroller_devkit/espconnect/)
+或打开中文版网页 [中文网页 - Chinese Website](https://ikalyes.github.io/ESPConnect-CHN/)
 2. 点击 **连接**，在浏览器弹出的对话框中选择您的设备
 3. 握手完成后，导航栏将解锁所有工具：设备信息、分区表、SPIFFS、应用、烧录工具、串口终端和日志
 4. 需要释放 USB 端口给其他应用时，点击 **断开连接**
