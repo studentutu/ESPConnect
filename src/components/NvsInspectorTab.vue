@@ -225,6 +225,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue';
+import type { DataTableHeader } from 'vuetify';
 
 type PartitionOption = {
   id: number | string;
@@ -287,7 +288,7 @@ const keyFilter = ref('');
 const typeFilter = ref('All');
 const valueFilter = ref('');
 
-const headers = [
+const headers: DataTableHeader[] = [
   { title: 'Namespace', key: 'namespace' },
   { title: 'Key', key: 'key' },
   { title: 'Type', key: 'type' },
