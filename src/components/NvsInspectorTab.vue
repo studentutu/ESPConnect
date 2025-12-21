@@ -30,9 +30,9 @@
           <v-spacer />
 
           <div v-if="result" class="nvs-inspector__summary">
-            <v-chip size="small" variant="tonal" color="primary">
-              <v-icon start size="18">mdi-alpha-v-circle-outline</v-icon>
-              v{{ result.version }}
+            <v-chip size="small" variant="outlined" color="primary">
+              <v-icon start size="18">mdi-information-outline</v-icon>
+              NVS v{{ result.version }}
             </v-chip>
 
             <v-tooltip
@@ -40,19 +40,19 @@
               location="bottom"
             >
               <template #activator="{ props: tooltipProps }">
-                <v-chip v-bind="tooltipProps" size="small" variant="tonal" color="secondary">
+                <v-chip v-bind="tooltipProps" size="small" variant="outlined" color="secondary">
                   <v-icon start size="18">mdi-book-open-page-variant</v-icon>
                   {{ result.pages.length.toLocaleString() }} pages
                 </v-chip>
               </template>
             </v-tooltip>
 
-            <v-chip size="small" variant="tonal" color="secondary">
+            <v-chip size="small" variant="outlined" color="secondary">
               <v-icon start size="18">mdi-folder-key-outline</v-icon>
               {{ result.namespaces.length.toLocaleString() }} namespaces
             </v-chip>
 
-            <v-chip size="small" variant="tonal" color="secondary">
+            <v-chip size="small" variant="outlined" color="secondary">
               <v-icon start size="18">mdi-key-outline</v-icon>
               {{ result.entries.length.toLocaleString() }} entries
             </v-chip>
@@ -61,9 +61,6 @@
 
         <v-progress-linear v-if="loading" height="10" indeterminate color="primary" rounded />
 
-        <p v-if="status" class="text-caption text-medium-emphasis mb-0">
-          {{ status }}
-        </p>
       </v-card-text>
     </v-card>
 
@@ -84,7 +81,7 @@
               <v-card variant="tonal">
         <v-card-title class="d-flex align-center justify-space-between">
           <span>Keys</span>
-          <v-chip size="large" variant="tonal" color="primary">
+          <v-chip size="large" variant="outlined" color="primary">
             {{ filteredEntries.length.toLocaleString() }} shown
           </v-chip>
         </v-card-title>
