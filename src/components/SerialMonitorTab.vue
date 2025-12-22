@@ -121,50 +121,55 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed, nextTick, onMounted, ref, watch } from 'vue';
+import type { SerialMonitorTabEmits, SerialMonitorTabProps } from '../types/serial-monitor';
 
-const props = defineProps({
-  monitorText: {
-    type: String,
-    default: '',
-  },
-  monitorActive: {
-    type: Boolean,
-    default: false,
-  },
-  monitorError: {
-    type: String,
-    default: null,
-  },
-  canStart: {
-    type: Boolean,
-    default: false,
-  },
-  canCommand: {
-    type: Boolean,
-    default: false,
-  },
+const props = withDefaults(defineProps<SerialMonitorTabProps>(), {
+  monitorText: '',
+  monitorActive: false,
+  monitorError: null,
+  canStart: false,
+  canCommand: false,
 });
 
-const emit = defineEmits(['start-monitor', 'stop-monitor', 'clear-monitor', 'reset-board']);
+const emit = defineEmits<SerialMonitorTabEmits>();
 
-const terminalEl = ref(null);
+const terminalEl = ref<unknown>(null);
 const filterText = ref('');
 const paused = ref(false);
 const pausedSnapshot = ref('');
-const togglePause = () => {
-  if (!paused.value) {
-    pausedSnapshot.value = props.monitorText;
-    paused.value = true;
-  } else {
-    pausedSnapshot.value = '';
-    paused.value = false;
+
+function resolveTerminalElement(target: unknown): HTMLElement | null {
+  if (target instanceof HTMLElement) {
+    return target;
   }
-};
+  if (!target || typeof target !== 'object') {
+    return null;
+  }
+  const el = (target as { $el?: unknown }).$el;
+  return el instanceof HTMLElement ? el : null;
+}
+
+function scrollToBottom(): void {
+  const el = resolveTerminalElement(terminalEl.value);
+  if (!el) return;
+  el.scrollTop = el.scrollHeight;
+}
+
+function togglePause(): void {
+  if (!paused.value) {
+    pausedSnapshot.value = props.monitorText ?? '';
+    paused.value = true;
+    return;
+  }
+  pausedSnapshot.value = '';
+  paused.value = false;
+}
+
 const sourceText = computed(() => (paused.value ? pausedSnapshot.value : props.monitorText));
 const displayText = computed(() => {
-  if (!filterText.value?.trim()) return sourceText.value;
+  if (!filterText.value.trim()) return sourceText.value;
   const needle = filterText.value.toLowerCase();
   return sourceText.value
     .split(/\r?\n/)
@@ -183,12 +188,8 @@ watch(
       return;
     }
     await nextTick();
-    const target =
-      terminalEl.value && '$el' in terminalEl.value ? terminalEl.value.$el : terminalEl.value;
-    const el = target instanceof HTMLElement ? target : null;
-    if (!el) return;
-    el.scrollTop = el.scrollHeight;
-  }
+    scrollToBottom();
+  },
 );
 
 watch(
@@ -201,21 +202,12 @@ watch(
     }
     if (paused.value) return;
     await nextTick();
-    const target =
-      terminalEl.value && '$el' in terminalEl.value ? terminalEl.value.$el : terminalEl.value;
-    const el = target instanceof HTMLElement ? target : null;
-    if (!el) return;
-    el.scrollTop = el.scrollHeight;
-  }
+    scrollToBottom();
+  },
 );
 
 onMounted(() => {
-  const target =
-    terminalEl.value && '$el' in terminalEl.value ? terminalEl.value.$el : terminalEl.value;
-  const el = target instanceof HTMLElement ? target : null;
-  if (el) {
-    el.scrollTop = el.scrollHeight;
-  }
+  scrollToBottom();
 });
 </script>
 

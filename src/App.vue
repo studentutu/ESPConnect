@@ -684,6 +684,7 @@ import type { DeviceDetails } from './types/device-details';
 import type { FilePreviewInfo } from './types/filesystem';
 import type { LittlefsDiskVersionFormatter, LittlefsEntry, LittlefsEntryType, LittlefsUploadPayload } from './types/littlefs';
 import type { FormattedPartitionRow, PartitionSegment, UnusedFlashSummary } from './types/partitions';
+import type { SerialMonitorError } from './types/serial-monitor';
 import type {
   AlertType,
   PartitionOptionValue,
@@ -3773,10 +3774,10 @@ const fatfsSelectedPartition = computed(() =>
 );
 const hasFatfsPartitionSelected = computed(() => Boolean(fatfsSelectedPartition.value));
 const logBuffer = ref('');
-const monitorText = ref('');
-const monitorActive = ref(false);
-const monitorError = ref(null);
-const monitorAbortController = ref(null);
+const monitorText = ref<string>('');
+const monitorActive = ref<boolean>(false);
+const monitorError = ref<SerialMonitorError>(null);
+const monitorAbortController = ref<AbortController | null>(null);
 const serialMonitorClosedPrompt = ref(false);
 const maintenanceNavigationLocked = computed(() => monitorActive.value);
 const MONITOR_BUFFER_LIMIT = 20000;
