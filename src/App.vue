@@ -1241,16 +1241,23 @@ function handleLittlefsUploadSelection(file: File | null) {
   }
   const targetPath = joinFsPath(littlefsState.currentPath || '/', file.name);
   const partition = littlefsSelectedPartition.value;
-  const partitionSize = partition?.size ?? littlefsState.blockSize * littlefsState.blockCount;
+  updateLittlefsUsage(partition);
+  const partitionSize =
+    littlefsState.usage?.capacityBytes ?? partition?.size ?? littlefsState.blockSize * littlefsState.blockCount;
   const usageSource = littlefsState.allFiles?.length ? littlefsState.allFiles : littlefsState.files;
-  const usedBytes = littlefsEstimateUsage(usageSource);
+  const usedBytes = littlefsState.usage?.usedBytes ?? littlefsEstimateUsage(usageSource);
   const existingEntry = usageSource.find(entry => entry.path === targetPath);
   const existingFootprint =
     existingEntry?.type === 'dir'
       ? littlefsState.blockSize || existingEntry?.size || 0
       : littlefsEstimateFileFootprint(existingEntry?.size ?? 0);
   const incomingFootprint = littlefsEstimateFileFootprint(file.size);
-  const availableBytes = partitionSize ? partitionSize - usedBytes + existingFootprint : 0;
+  const availableBytes =
+    partitionSize && typeof littlefsState.usage?.freeBytes === 'number'
+      ? littlefsState.usage.freeBytes + existingFootprint
+      : partitionSize
+        ? partitionSize - usedBytes + existingFootprint
+        : 0;
   if (partitionSize && incomingFootprint > availableBytes) {
     const message =
       'Not enough LittleFS space for this file. Delete files or format the partition, then try again.';
@@ -1296,12 +1303,17 @@ async function performLittlefsUpload(payload: LittlefsUploadPayload) {
     return;
   }
   const partition = littlefsSelectedPartition.value;
-  const partitionSize = partition?.size ?? littlefsState.blockSize * littlefsState.blockCount;
+  updateLittlefsUsage(partition);
+  const partitionSize =
+    littlefsState.usage?.capacityBytes ?? partition?.size ?? littlefsState.blockSize * littlefsState.blockCount;
   const usageSource = littlefsState.allFiles?.length ? littlefsState.allFiles : littlefsState.files;
-  const usedBytes = littlefsEstimateUsage(usageSource);
+  const usedBytes = littlefsState.usage?.usedBytes ?? littlefsEstimateUsage(usageSource);
   let workingFreeBytes =
-    littlefsState.usage?.freeBytes ??
-    (partitionSize ? Math.max(partitionSize - usedBytes, 0) : Number.POSITIVE_INFINITY);
+    typeof littlefsState.usage?.freeBytes === 'number'
+      ? littlefsState.usage.freeBytes
+      : partitionSize
+        ? Math.max(partitionSize - usedBytes, 0)
+        : Number.POSITIVE_INFINITY;
   const derivedIsDir = isDir === true || (!file && !!path);
   if (derivedIsDir && !file && path) {
     const targetDir = joinFsPath(littlefsState.currentPath || '/', path);
@@ -1405,7 +1417,15 @@ async function performLittlefsUpload(payload: LittlefsUploadPayload) {
       error,
     });
     const msg = formatErrorMessage(error);
-    const spaceError = msg.toLowerCase().includes('no more free space') || msg.toLowerCase().includes('unable to add file');
+    const code = typeof error?.code === 'number' ? error.code : null;
+    const normalized = msg.toLowerCase();
+    const spaceError =
+      code === -28 ||
+      normalized.includes('no space') ||
+      normalized.includes('no more free space') ||
+      normalized.includes('unable to add file') ||
+      normalized.includes('nospace') ||
+      normalized.includes('enospc');
     if (spaceError) {
       littlefsState.uploadBlocked = true;
       littlefsState.uploadBlockedReason = msg;
@@ -2484,18 +2504,22 @@ function resetLittlefsState() {
 
 // Calculate LittleFS usage based on current entries.
 function updateLittlefsUsage(partition = littlefsSelectedPartition.value) {
-  const partitionSize = partition?.size ?? 0;
-  const capacityBytes =
-    littlefsState.blockSize && littlefsState.blockCount
-      ? littlefsState.blockSize * littlefsState.blockCount
-      : partitionSize;
-  const source = littlefsState.allFiles?.length ? littlefsState.allFiles : littlefsState.files;
-  const usedBytes = littlefsEstimateUsage(source);
-  littlefsState.usage = {
-    capacityBytes,
-    usedBytes,
-    freeBytes: Math.max(capacityBytes - usedBytes, 0),
-  };
+  if (littlefsState.client && typeof littlefsState.client.getUsage === 'function') {
+    littlefsState.usage = littlefsState.client.getUsage();
+  } else {
+    const partitionSize = partition?.size ?? 0;
+    const capacityBytes =
+      littlefsState.blockSize && littlefsState.blockCount
+        ? littlefsState.blockSize * littlefsState.blockCount
+        : partitionSize;
+    const source = littlefsState.allFiles?.length ? littlefsState.allFiles : littlefsState.files;
+    const usedBytes = littlefsEstimateUsage(source);
+    littlefsState.usage = {
+      capacityBytes,
+      usedBytes,
+      freeBytes: Math.max(capacityBytes - usedBytes, 0),
+    };
+  }
   // Update disk version from client if available
   if (littlefsState.client?.getDiskVersion) {
     littlefsState.diskVersion = littlefsState.client.getDiskVersion();

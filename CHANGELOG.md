@@ -1,6 +1,7 @@
 # Changelog
 
 ## 1.1.1
+- Fixed LittleFS now use client getUsage for uploads
 - Refactor components to typescript
 
 ## 1.1.0
