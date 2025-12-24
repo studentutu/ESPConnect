@@ -301,7 +301,8 @@ export function createEsptoolClient({
       status('Reconnect and sync with the stub');
       await loader.reconnect();
     } catch (e) {
-
+      const message = e instanceof Error ? e.message : String(e);
+      status(`Could not reconnect (${message})`);
       console.error("Reconnect");
       console.error(e);
     } finally {
