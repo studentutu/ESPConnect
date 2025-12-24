@@ -295,6 +295,11 @@ export function createEsptoolClient({
 
   let client: EsptoolClient;
 
+  async function syncWithStub(): Promise<void> {
+     await loader.hardReset();
+     await loader.sync();
+  }
+
   // Open the serial port, talk to the ROM bootloader, load the stub flasher, optionally raise baud,
   // and return the detected chip name plus MAC/security metadata.
   async function connectAndHandshake(): Promise<ConnectHandshakeResult> {
