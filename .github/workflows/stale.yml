@@ -26,6 +26,7 @@ jobs:
             advanced feature
             bug
             enhancement
+            tasmota-webserial-esptool
 
           stale-issue-message: >
             This issue has had no activity for 30 days. If this is still relevant,
