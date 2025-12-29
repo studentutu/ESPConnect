@@ -28,13 +28,18 @@ const CRC32_TABLE = (() => {
   return table;
 })();
 
-function crc32Le(init: number, data: Uint8Array, start = 0, length = data.length - start) {
-  let crc = init >>> 0;
+function crc32Update(crc: number, data: Uint8Array, start = 0, length = data.length - start) {
+  let c = crc >>> 0;
   const end = Math.min(data.length, start + length);
   for (let i = start; i < end; i += 1) {
-    crc = CRC32_TABLE[(crc ^ data[i]) & 0xff] ^ (crc >>> 8);
+    c = CRC32_TABLE[(c ^ data[i]) & 0xff] ^ (c >>> 8);
   }
-  return crc >>> 0;
+  return c >>> 0;
+}
+
+function nvsCrc32(data: Uint8Array, start = 0, length = data.length - start) {
+  const running = crc32Update(0x00000000, data, start, length);
+  return (running ^ 0xffffffff) >>> 0;
 }
 
 function writeU32Le(buf: Uint8Array, offset: number, value: number) {
@@ -50,11 +55,11 @@ function writeU16Le(buf: Uint8Array, offset: number, value: number) {
 }
 
 function computeItemCrc32(item: Uint8Array) {
-  let crc = 0xffffffff;
-  crc = crc32Le(crc, item, 0, 4);
-  crc = crc32Le(crc, item, 8, 16);
-  crc = crc32Le(crc, item, 24, 8);
-  return crc >>> 0;
+  let crc = 0x00000000;
+  crc = crc32Update(crc, item, 0, 4);
+  crc = crc32Update(crc, item, 8, 16);
+  crc = crc32Update(crc, item, 24, 8);
+  return (crc ^ 0xffffffff) >>> 0;
 }
 
 function setEntryState(entryTableWords: Uint32Array, entryIndex: number, stateBits: number) {
@@ -69,7 +74,7 @@ function writeHeader(page: Uint8Array, { seq, versionByte }: { seq: number; vers
   writeU32Le(page, 4, seq);
   page[8] = versionByte;
   // bytes [9..27] are already 0xFF (reserved)
-  const crc = crc32Le(0xffffffff, page, 4, 24);
+  const crc = nvsCrc32(page, 4, 24);
   writeU32Le(page, 28, crc);
 }
 
@@ -119,7 +124,7 @@ function writeItemV1String(page: Uint8Array, entryIndex: number, { nsIndex, key,
   header[8 + Math.min(keyBytes.length, 15)] = 0x00;
   writeU16Le(header, 24, payload.length);
   writeU16Le(header, 26, 0xffff);
-  writeU32Le(header, 28, crc32Le(0xffffffff, payload));
+  writeU32Le(header, 28, nvsCrc32(payload));
   writeU32Le(header, 4, computeItemCrc32(header));
 
   for (let i = 0; i < span - 1; i += 1) {
@@ -160,7 +165,7 @@ function writeItemV2String(page: Uint8Array, entryIndex: number, { nsIndex, key,
   header[8 + Math.min(keyBytes.length, 15)] = 0x00;
   writeU16Le(header, 24, payload.length);
   writeU16Le(header, 26, 0xffff);
-  writeU32Le(header, 28, crc32Le(0xffffffff, payload));
+  writeU32Le(header, 28, nvsCrc32(payload));
   writeU32Le(header, 4, computeItemCrc32(header));
 
   for (let i = 0; i < span - 1; i += 1) {
@@ -189,7 +194,7 @@ function writeItemV2BlobChunk(
   header[8 + Math.min(keyBytes.length, 15)] = 0x00;
   writeU16Le(header, 24, data.length);
   writeU16Le(header, 26, 0xffff);
-  writeU32Le(header, 28, crc32Le(0xffffffff, data));
+  writeU32Le(header, 28, nvsCrc32(data));
   writeU32Le(header, 4, computeItemCrc32(header));
 
   for (let i = 0; i < span - 1; i += 1) {
