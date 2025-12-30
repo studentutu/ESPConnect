@@ -659,7 +659,7 @@ import { useFatfsManager, useLittlefsManager, useSpiffsManager } from './composa
 import { useDialogs } from './composables/useDialogs';
 import { getLanguage, setLanguage, SupportedLocale } from './plugins/i18n';
 import { readPartitionTable } from './utils/partitions';
-import { createEsptoolClient, requestSerialPort, type CompatibleLoader, type CompatibleTransport, type EsptoolClient } from './services/esptoolClient';
+import { createEsptoolClient, requestSerialPort, type CompatibleLoader, type CompatibleTransport, type EsptoolClient, type StatusPayload } from './services/esptoolClient';
 import {
   SPIFFS_AUDIO_EXTENSIONS,
   SPIFFS_AUDIO_MIME_MAP,
@@ -5532,15 +5532,17 @@ async function stopMonitor(options: StopMonitorOptions = {}) {
   busy.value = true;
   maintenanceReturnInProgress.value = true;
   appendLog('Returning to maintenance mode.', '[ESPConnect-ui]');
-  connectDialog.label = 'Returning to maintenance mode...';
-  connectDialog.message = 'Re-entering ROM bootloader...';
+  connectDialog.label = t('dialogs.returningToMaintenance');
+  connectDialog.message = t('dialogs.reEnteringBootloader');
   connectDialog.visible = true;
   try {
     await loader.value.reconnect();
     monitorAutoResetPerformed = false;
 
     if (lastFlashBaud.value) {
-      connectDialog.message = `Restoring baud to ${lastFlashBaud.value.toLocaleString()} bps...`;
+      connectDialog.message = t('dialogs.restoringBaud', {
+        baud: lastFlashBaud.value.toLocaleString(),
+      });
       await setConnectionBaud(lastFlashBaud.value, { remember: true, log: true });
     }
   } catch (error) {
@@ -5644,8 +5646,8 @@ async function connect() {
   serialMonitorClosedPrompt.value = false;
   resetMaintenanceState();
   connectDialog.visible = false;
-  connectDialog.label = 'Connecting to ESP device...';
-  connectDialog.message = 'Opening serial port...';
+  connectDialog.label = t('dialogs.connectingToDevice');
+  connectDialog.message = t('dialogs.openingSerialPort');
   if (connectDialogTimer) {
     clearTimeout(connectDialogTimer);
     connectDialogTimer = null;
@@ -5702,9 +5704,22 @@ async function connect() {
       desiredBaud,
       debugSerial: false,
       debugLogging: false,
-      onStatus: msg => {
-        connectDialog.message = msg;
-        appendLog(msg, '[ESPConnect-Debug]');
+      onStatus: (payload: StatusPayload) => {
+        if (!payload) {
+          return;
+        }
+        const translated =
+          payload.translationKey != null
+            ? t(payload.translationKey, payload.params ?? {})
+            : '';
+        const resolvedMessage = translated || payload.message || '';
+        if (resolvedMessage) {
+          appendLog(resolvedMessage, '[ESPConnect-Debug]');
+        }
+        const showInDialog = payload.showInDialog ?? true;
+        if (showInDialog && resolvedMessage) {
+          connectDialog.message = resolvedMessage;
+        }
       },
     });
     esptoolClient.value = esptool;
@@ -5724,7 +5739,7 @@ async function connect() {
     }
 
     // Open the serial port, talk to the ROM bootloader, load the stub flasher
-    connectDialog.message = 'Handshaking with ROM bootloader...';
+    connectDialog.message = t('dialogs.handshakingBootloader');
     const esp = await client.connectAndHandshake();
     currentBaud.value = desiredBaud || connectBaud_defaultROM;
     transportInstance.baudrate = currentBaud.value;
@@ -5745,7 +5760,7 @@ async function connect() {
     const featuresRaw = metadata.features;
     const crystalFreq = metadata.crystalFreq;
 
-    connectDialog.message = `Reading Flash size...`;
+    connectDialog.message = t('dialogs.readingFlashSize');
     const flashLabel = esp.flashSize;
     appendLog(
       `Chip detectFlashSize: ${flashLabel === null ? 'undefined' : flashLabel}`,
@@ -5783,7 +5798,7 @@ async function connect() {
       '[ESPConnect-Debug]'
     );
 
-    connectDialog.message = `Preparing information...`;
+    connectDialog.message = t('dialogs.preparingInformation');
     const featureList: string[] = Array.isArray(featuresRaw)
       ? (featuresRaw as string[])
       : typeof featuresRaw === 'string'
@@ -5913,7 +5928,7 @@ async function connect() {
       appendLog(`Warning: failed to flush serial input before partition read (${formatErrorMessage(err)}).`, '[ESPConnect-Warn]');
     }
 
-    connectDialog.message = `Reading partition table...`;
+    connectDialog.message = t('dialogs.readingPartitionTable');
     if (esp.chipName?.includes('ESP8266')) {
       appendLog('Skipping partition table read for ESP8266 (not supported).', '[ESPConnect-Debug]');
       partitionTable.value = [];

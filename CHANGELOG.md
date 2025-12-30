@@ -4,6 +4,7 @@
 ### Improvement
 - Serial monitor start button now shows a loading indicator while the monitor is being initialized
 - Delay removed for the connection dialog
+- Connect dialog now displays localized status updates while the bootloader workflow runs
 
 ## 1.1.3
 ### Improvement

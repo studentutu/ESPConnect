@@ -40,7 +40,13 @@ import { readEsp32H4Metadata } from './chipMetadata/esp32h4';
 import { readEsp32H21Metadata } from './chipMetadata/esp32h21';
 import { readEsp32S31Metadata } from './chipMetadata/esp32s31';
 
-type StatusCallback = (message: string) => void;
+export type StatusPayload = {
+  translationKey?: string;
+  params?: Record<string, unknown>;
+  message?: string;
+  showInDialog?: boolean;
+};
+type StatusCallback = (payload: StatusPayload) => void;
 
 type BusySetter = (busy: boolean) => void;
 type BusyGetter = () => boolean;
@@ -292,18 +298,18 @@ export function createEsptoolClient({
 
   const transport = new CompatibleTransport(port, debugSerial ?? false, loader, isBusy);
 
-  const status = (msg: string) => onStatus?.(msg);
-  status(`tasmota-webserial-esptool v(${tasmotaEsptoolVersion})`);
+  const status = (payload: StatusPayload) => onStatus?.(payload);
+  status({ message: `tasmota-webserial-esptool v(${tasmotaEsptoolVersion})`, showInDialog: false });
 
   let client: EsptoolClient;
 
   async function syncWithStub(): Promise<void> {
     try {
-      status('Reconnect and sync with the stub');
+      status({ translationKey: 'dialogs.reconnectingStub', message: 'Reconnect and sync with the stub' });
       await loader.reconnect();
     } catch (e) {
       const message = e instanceof Error ? e.message : String(e);
-      status(`Could not reconnect (${message})`);
+      status({ message: `Could not reconnect (${message})`, showInDialog: false });
       console.error("Reconnect");
       console.error(e);
     } finally {
@@ -316,20 +322,29 @@ export function createEsptoolClient({
   async function connectAndHandshake(): Promise<ConnectHandshakeResult> {
     setBusy(true);
     try {
-      status('Opening serial port...');
+      status({
+        translationKey: 'dialogs.openingSerialPort',
+        showInDialog: true,
+      });
       if (!port.readable || !port.writable) {
         await port.open({ baudRate: DEFAULT_ROM_BAUD });
       }
       loader.baudrate = DEFAULT_ROM_BAUD;
       transport.baudrate = DEFAULT_ROM_BAUD;
 
-      status('Handshaking with ROM bootloader...');
+      status({
+        translationKey: 'dialogs.handshakingBootloader',
+        showInDialog: true,
+      });
       await loader.initialize();
       const macAddress = formatMac(loader.macAddr());
 
       const chipName = loader.chipName ?? 'ESP (Unknown)';
 
-      status('Loading stub flasher...');
+      status({
+        translationKey: 'dialogs.loadingStubFlasher',
+        showInDialog: true,
+      });
       const stub = await loader.runStub();
       loader = decorateLoader(stub, setBusy);
       loader.debug = debugLogging;
@@ -343,7 +358,10 @@ export function createEsptoolClient({
       let securityInfo = undefined;
       let securityFacts: SecurityFact[] = [];
       try {
-        status('Getting security information...');
+        status({
+          translationKey: 'dialogs.gettingSecurityInfo',
+          showInDialog: true,
+        });
         securityInfo = await loader.getSecurityInfo();
         securityFacts = buildSecurityFacts(securityInfo, chipName);
       } catch (error) {
