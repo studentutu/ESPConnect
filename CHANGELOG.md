@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.1.4-preview-2
+## 1.1.4-preview-3
 ### Improvement
 - Fat filesystem now supports folders
 - Serial monitor start button now shows a loading indicator while the monitor is being initialized
