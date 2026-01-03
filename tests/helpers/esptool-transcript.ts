@@ -2,9 +2,14 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { ReadableStream } from "node:stream/web";
 import {
+  ESP_CHANGE_BAUDRATE,
   ESP_GET_SECURITY_INFO,
+  ESP_MEM_BEGIN,
+  ESP_MEM_DATA,
+  ESP_MEM_END,
   ESP_READ_REG,
   ESP_SYNC,
+  ESP_WRITE_REG,
 } from "tasmota-webserial-esptool/dist/const.js";
 
 type TranscriptStep =
@@ -18,6 +23,10 @@ type TranscriptStep =
   | {
       type: "timeout";
       opcode?: string | number;
+    }
+  | {
+      type: "raw";
+      data: string;
     };
 
 type Transcript = {
@@ -25,14 +34,22 @@ type Transcript = {
 };
 
 const OPCODE_MAP: Record<string, number> = {
+  ESP_CHANGE_BAUDRATE,
   ESP_SYNC,
   ESP_GET_SECURITY_INFO,
   ESP_READ_REG,
+  ESP_WRITE_REG,
+  ESP_MEM_BEGIN,
+  ESP_MEM_DATA,
+  ESP_MEM_END,
 };
 
 function resolveOpcode(opcode: string | number | undefined): number | undefined {
   if (opcode === undefined) return undefined;
   if (typeof opcode === "number") return opcode;
+  if (opcode.startsWith("0x")) {
+    return parseInt(opcode.slice(2), 16);
+  }
   const resolved = OPCODE_MAP[opcode];
   if (resolved === undefined) {
     throw new Error(`Unknown opcode "${opcode}"`);
@@ -151,17 +168,22 @@ class TranscriptRunner {
     this.steps = [...transcript.steps];
   }
 
-  handleWrite(frame: Uint8Array): Uint8Array | null {
+  handleWrite(frame: Uint8Array): Uint8Array[] {
     const opcode = decodeCommandOpcode(frame);
 
     if (this.mode === "record") {
       this.recordedWrites.push(opcode);
-      return null;
+      return [];
     }
 
+    const packets: Uint8Array[] = [];
     const step = this.steps.shift();
     if (!step) {
       throw new Error(`Transcript exhausted (opcode 0x${opcode.toString(16)})`);
+    }
+
+    if (step.type === "raw") {
+      throw new Error(`Unexpected raw packet before opcode 0x${opcode.toString(16)}`);
     }
 
     const expectedOpcode = resolveOpcode(step.opcode);
@@ -173,16 +195,23 @@ class TranscriptRunner {
       );
     }
 
-    if (step.type === "timeout") {
-      return null;
+    if (step.type === "response") {
+      packets.push(
+        buildResponsePacket(
+          expectedOpcode ?? opcode,
+          parseValue(step.value),
+          step.data,
+          step.status,
+        ),
+      );
     }
 
-    return buildResponsePacket(
-      expectedOpcode ?? opcode,
-      parseValue(step.value),
-      step.data,
-      step.status,
-    );
+    while (this.steps[0]?.type === "raw") {
+      const raw = this.steps.shift() as Extract<TranscriptStep, { type: "raw" }>;
+      packets.push(slipEncode(parseHexBytes(raw.data)));
+    }
+
+    return packets;
   }
 
   remaining(): number {
@@ -236,9 +265,11 @@ export class FakeSerialPort {
     this.writer = {
       write: async chunk => {
         const bytes = chunk instanceof Uint8Array ? chunk : new Uint8Array(chunk);
-        const response = this.runner.handleWrite(bytes);
-        if (response && this.controller) {
-          this.controller.enqueue(response);
+        const packets = this.runner.handleWrite(bytes);
+        if (this.controller) {
+          for (const packet of packets) {
+            this.controller.enqueue(packet);
+          }
         }
       },
       close: async () => {

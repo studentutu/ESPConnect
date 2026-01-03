@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { ESPLoader } from "tasmota-webserial-esptool";
 import {
   createEsptoolClient,
   type StatusPayload,
@@ -25,13 +26,32 @@ const createTerminal = () => ({
   },
 });
 
-const createClient = (transcriptName: string) => {
+let runStubSpy: ReturnType<typeof vi.spyOn> | null = null;
+
+const ensureStubSkipped = () => {
+  if (!runStubSpy) {
+    runStubSpy = vi
+      .spyOn(ESPLoader.prototype, "runStub")
+      .mockImplementation(function () {
+        return Promise.resolve(this as unknown as ESPLoader);
+      });
+  }
+};
+
+const createClient = (
+  transcriptName: string,
+  options?: { desiredBaud?: number; skipStub?: boolean },
+) => {
+  if (options?.skipStub) {
+    ensureStubSkipped();
+  }
   const port = new FakeSerialPort(loadTranscript(transcriptName));
   const terminal = createTerminal();
   const { statuses, onStatus } = createStatusCapture();
   const client = createEsptoolClient({
     port: port as unknown as SerialPort,
     terminal,
+    desiredBaud: options?.desiredBaud,
     debugSerial: false,
     debugLogging: false,
     onStatus,
@@ -40,12 +60,17 @@ const createClient = (transcriptName: string) => {
 };
 
 afterEach(() => {
+  runStubSpy?.mockRestore();
+  runStubSpy = null;
   vi.useRealTimers();
 });
 
 describe("tasmota-webserial-esptool wrapper contract", () => {
   it("connectAndHandshake reports status order and returns expected shape", async () => {
-    const { client, port, statuses } = createClient("handshake");
+    const { client, port, statuses } = createClient("handshake", {
+      desiredBaud: 921600,
+      skipStub: true,
+    });
 
     const result = await client.connectAndHandshake();
 
@@ -60,8 +85,8 @@ describe("tasmota-webserial-esptool wrapper contract", () => {
     ]);
 
     expect(result).toMatchObject({
-      chipName: "ESP32-H4",
-      macAddress: "aa:bb:cc:dd:ee:ff",
+      chipName: "ESP32-S3",
+      macAddress: "34:85:18:95:6b:4c",
       flashSize: null,
     });
     expect(result.securityFacts.length).toBeGreaterThan(0);
@@ -71,7 +96,10 @@ describe("tasmota-webserial-esptool wrapper contract", () => {
   });
 
   it("syncWithStub reports reconnecting status and completes", async () => {
-    const { client, port, statuses } = createClient("handshake-reconnect");
+    const { client, port, statuses } = createClient("handshake-reconnect", {
+      desiredBaud: 921600,
+      skipStub: true,
+    });
 
     await client.connectAndHandshake();
     await client.syncWithStub();
@@ -87,7 +115,10 @@ describe("tasmota-webserial-esptool wrapper contract", () => {
 
   it("timeout transcript maps to a SlipReadError", async () => {
     vi.useFakeTimers();
-    const { client, port } = createClient("handshake-timeout");
+    const { client, port } = createClient("handshake-timeout", {
+      desiredBaud: 921600,
+      skipStub: true,
+    });
 
     const promise = client.connectAndHandshake();
     const assertion = expect(promise).rejects.toMatchObject({

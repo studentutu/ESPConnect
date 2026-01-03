@@ -1,11 +1,16 @@
 {
   "steps": [
-    { "type": "response", "opcode": "ESP_SYNC", "data": "0000" },
+    {
+      "type": "response",
+      "opcode": "ESP_SYNC",
+      "value": "0x20120707",
+      "data": "00000000"
+    },
     {
       "type": "response",
       "opcode": "ESP_GET_SECURITY_INFO",
-      "data": "0000000000000000000000001c00000001000000",
-      "status": "00000000"
+      "value": "0x0",
+      "data": "00000000000000000000000c090000000000000000000000"
     },
     { "type": "timeout", "opcode": "ESP_READ_REG" }
   ]
