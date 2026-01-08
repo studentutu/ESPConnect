@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.1.5-preview-2
+## 1.1.5-preview-3
 
 ### Improvement
 - Serial Monitor now renders ANSI color/style escape sequences in the output.
