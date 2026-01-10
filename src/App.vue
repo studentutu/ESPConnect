@@ -6346,6 +6346,39 @@ function parseNumericInput(value: string | number | null | undefined, label: str
   return parsed;
 }
 
+async function refreshPartitionTable(loaderInstance = loader.value) {
+  if (!loaderInstance) {
+    return;
+  }
+  const showDialog = !connectDialog.visible;
+  const previousDialog = showDialog
+    ? { label: connectDialog.label, message: connectDialog.message }
+    : null;
+
+  if (showDialog) {
+    connectDialog.label = t('dialogs.readingPartitionTable');
+    connectDialog.message = '';
+    connectDialog.visible = true;
+  }
+
+  try {
+    if (chipDetails.value?.name?.includes('ESP8266')) {
+      partitionTable.value = [];
+      return;
+    }
+    const partitions = await runLoaderOperation(() =>
+      readPartitionTable(loaderInstance, undefined, undefined, appendLog),
+    );
+    partitionTable.value = partitions;
+  } finally {
+    if (showDialog) {
+      connectDialog.visible = false;
+      connectDialog.label = previousDialog?.label ?? connectDialog.label;
+      connectDialog.message = previousDialog?.message ?? connectDialog.message;
+    }
+  }
+}
+
 // Flash the selected firmware image to the device.
 async function flashFirmware() {
   const loaderInstance = loader.value;
@@ -6354,6 +6387,7 @@ async function flashFirmware() {
     return;
   }
   if (flashInProgress.value || busy.value) return;
+  let shouldRefreshPartitions = false;
 
   let offsetNumber;
   try {
@@ -6384,6 +6418,7 @@ async function flashFirmware() {
     appendLog('Firmware flash cancelled by user.', '[ESPConnect-Warn]');
     return;
   }
+  shouldRefreshPartitions = true;
 
   flashInProgress.value = true;
   busy.value = true;
@@ -6444,12 +6479,15 @@ async function flashFirmware() {
   } finally {
     flashProgress.value = 0;
     flashInProgress.value = false;
-    busy.value = false;
     flashCancelRequested.value = false;
     flashProgressDialog.visible = false;
     flashProgressDialog.value = 0;
     flashProgressDialog.label = '';
     flashProgressDialog.indeterminate = false;
+    if (shouldRefreshPartitions) {
+      await refreshPartitionTable(loaderInstance);
+    }
+    busy.value = false;
   }
 }
 
@@ -7080,6 +7118,7 @@ async function handleEraseFlash(payload = { mode: 'full' }) {
     return;
   }
 
+  let shouldRefreshPartitions = false;
   try {
     maintenanceBusy.value = true;
     flashReadStatusType.value = 'info';
@@ -7089,9 +7128,7 @@ async function handleEraseFlash(payload = { mode: 'full' }) {
     flashProgressDialog.indeterminate = true;
     flashProgressDialog.label = t('flashFirmware.progress.erasingFlash');
     await runLoaderOperation(() => eraseFlashFn.call(loaderInstance));
-    flashReadStatusType.value = 'success';
-    flashReadStatus.value = t('flashFirmware.backup.status.complete');
-    appendLog('Entire flash erased.', '[ESPConnect-Debug]');
+    shouldRefreshPartitions = true;
   } catch (error) {
     flashReadStatusType.value = 'error';
     flashReadStatus.value = t('flashFirmware.backup.status.failed', {
@@ -7103,6 +7140,12 @@ async function handleEraseFlash(payload = { mode: 'full' }) {
     flashProgressDialog.value = 0;
     flashProgressDialog.label = '';
     flashProgressDialog.indeterminate = false;
+    if (shouldRefreshPartitions) {
+      await refreshPartitionTable(loaderInstance);
+      flashReadStatusType.value = 'success';
+      flashReadStatus.value = t('flashFirmware.backup.status.complete');
+      appendLog('Entire flash erased.', '[ESPConnect-Debug]');
+    }
   }
 }
 

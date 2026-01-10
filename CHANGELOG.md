@@ -1,6 +1,9 @@
 # Changelog
 
 ## 1.1.6-preview
+### Improvement
+- Flash tools now refresh the partition table after full erase or firmware flashes so the partitions view stays accurate.
+
 ### Internal runtime
 - Bump tasmota-webserial-esptool 7.3.3 to 7.3.4
 
