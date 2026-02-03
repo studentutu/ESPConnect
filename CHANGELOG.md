@@ -1,6 +1,12 @@
 # Changelog
 
 ## 1.1.8-preview
+### Improvement
+- Session log now records chip pkgVersion/chipRevision values.
+
+### Documentation
+- Clarified i18n rules: session log entries must remain English-only.
+
 ### Internal runtime
 - Bump tasmota-webserial-esptool 7.3.4 to 7.3.7
 

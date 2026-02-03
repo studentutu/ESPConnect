@@ -46,6 +46,7 @@
     emptyState: 'Votre regisre apparaîtra ici lorsque vous aurez modifié quelque chose.',
     copySuccess: 'Copier le registre de session dans le presse-papier.',
     copyError: 'Incapable de copier le registre.  Veuillez essayer de nouveau.',
+    chipMetadata: 'Chip metadata: pkgVersion={pkgVersion}, chipRevision={chipRevision}',
   },
   serialMonitor: {
     title: 'Moniteur série',

@@ -6066,6 +6066,23 @@ async function connect() {
     lastFlashBaud.value = currentBaud.value;
 
     const metadata = await client.readChipMetadata();
+    const englishUnknown = t('deviceInfo.unknown', {}, { locale: 'en' });
+    const pkgVersionLabel =
+      typeof metadata.pkgVersion === 'number' && !Number.isNaN(metadata.pkgVersion)
+        ? String(metadata.pkgVersion)
+        : englishUnknown;
+    const chipRevisionLabel =
+      typeof metadata.chipRevision === 'number' && !Number.isNaN(metadata.chipRevision)
+        ? String(metadata.chipRevision)
+        : englishUnknown;
+    appendLog(
+      t(
+        'sessionLog.chipMetadata',
+        { pkgVersion: pkgVersionLabel, chipRevision: chipRevisionLabel },
+        { locale: 'en' }
+      ),
+      '[ESPConnect-Debug]'
+    );
 
     const descriptionRaw = metadata.description ?? esp.chipName;
     const featuresRaw = metadata.features;
