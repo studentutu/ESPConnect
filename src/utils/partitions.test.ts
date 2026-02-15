@@ -8,6 +8,7 @@ const textEncoder = new TextEncoder();
 const FIXTURE_ROOT = path.resolve(process.cwd(), 'src/tests/fixtures/fs-images');
 const FAT_FIXTURE = new Uint8Array(readFileSync(path.join(FIXTURE_ROOT, 'fat', 'fat.bin')));
 const MICROPY_FIXTURE = new Uint8Array(readFileSync(path.join(FIXTURE_ROOT, 'littlefs', 'littlefs-micropython1-25.bin')));
+const LITTLEFS_V2_0_FIXTURE = new Uint8Array(readFileSync(path.join(FIXTURE_ROOT, 'littlefs', 'littlefs_v2_0.bin')));
 const SPIFFS_FIXTURE = new Uint8Array(readFileSync(path.join(FIXTURE_ROOT, 'spiffs', 'spiffs.bin')));
 
 function makeFixtureLoader(image: Uint8Array) {
@@ -96,6 +97,11 @@ describe('partition utilities', () => {
     it('detects LittleFS in MicroPython FAT-labeled fixture', async () => {
       const loader = makeFixtureLoader(MICROPY_FIXTURE);
       expect(await detectFilesystemType(loader, 0, MICROPY_FIXTURE.length)).toBe('littlefs');
+    });
+
+    it('returns null for LittleFS v2.0 fixture when probe markers are inconclusive', async () => {
+      const loader = makeFixtureLoader(LITTLEFS_V2_0_FIXTURE);
+      expect(await detectFilesystemType(loader, 0, LITTLEFS_V2_0_FIXTURE.length)).toBeNull();
     });
   });
 
