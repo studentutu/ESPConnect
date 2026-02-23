@@ -161,6 +161,44 @@ describe('partition utilities', () => {
       expect(await probePartitionTableOffset(loader)).toBeNull();
     });
 
+    it('falls back to the default offset when probing returns null', async () => {
+      const entry = makePartitionEntry({
+        type: 0x00,
+        subtype: 0x00,
+        offset: 0x10000,
+        size: 0x100000,
+        label: 'factory',
+      });
+      const table = createPartitionTable([entry, makeTerminator()]);
+      const calls: Array<{ offset: number; length: number }> = [];
+
+      const loader = {
+        readFlash: async (offset: number, length: number) => {
+          calls.push({ offset, length });
+          if (length === 32) {
+            throw new Error('probe failed');
+          }
+          if (offset === 0x8000) {
+            return table.subarray(0, length);
+          }
+          return new Uint8Array(length).fill(0xff);
+        },
+      };
+
+      const entries = await readPartitionTable(loader);
+
+      expect(entries).toEqual([
+        {
+          label: 'factory',
+          type: 0x00,
+          subtype: 0x00,
+          offset: 0x10000,
+          size: 0x100000,
+        },
+      ]);
+      expect(calls).toContainEqual({ offset: 0x8000, length: 0x400 });
+    });
+
     it('parses entries and detects filesystem type for LittleFS partitions', async () => {
       const fsLabel = 'appfs';
       const entry = makePartitionEntry({ type: 0x01, subtype: 0x82, offset: 0x1000, size: 0x2000, label: fsLabel });
