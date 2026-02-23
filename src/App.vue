@@ -6296,8 +6296,18 @@ async function connect() {
     } else if (loader.value) {
       const loaderInstance = loader.value;
       const detectedOffset = await runLoaderOperation(() => probePartitionTableOffset(loaderInstance, appendLog));
-      updatePartitionTableOffset(`0x${detectedOffset.toString(16)}`);
-      const partitions = await runLoaderOperation(() => readPartitionTable(loaderInstance, detectedOffset, undefined, appendLog));
+      let partitionOffset: number;
+      if (detectedOffset != null) {
+        partitionOffset = detectedOffset;
+        updatePartitionTableOffset(`0x${detectedOffset.toString(16)}`);
+      } else {
+        try {
+          partitionOffset = parseOffset(partitionTableOffset.value);
+        } catch {
+          partitionOffset = 0x8000;
+        }
+      }
+      const partitions = await runLoaderOperation(() => readPartitionTable(loaderInstance, partitionOffset, undefined, appendLog));
       partitionTable.value = partitions;
       appMetadataLoaded.value = false;
     } else {
@@ -6453,8 +6463,12 @@ async function refreshPartitionTable(loaderInstance = loader.value) {
     let offset: number;
     try {
       offset = parseOffset(partitionTableOffset.value);
-    } catch {
-      offset = 0x8000;
+    } catch (err) {
+      appendLog(
+        `Invalid partition table offset "${partitionTableOffset.value}". ${formatErrorMessage(err)}`,
+        '[ESPConnect-Warn]',
+      );
+      return;
     }
     const partitions = await runLoaderOperation(() =>
       readPartitionTable(loaderInstance, offset, undefined, appendLog),
