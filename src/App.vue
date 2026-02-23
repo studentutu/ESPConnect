@@ -105,10 +105,7 @@
             <v-window-item value="partitions">
               <PartitionsTab :partition-segments="partitionSegments" :formatted-partitions="formattedPartitions"
                 :unused-summary="unusedFlashSummary" :flash-size-label="partitionFlashSizeLabel"
-                :connected="connected" :partition-table-offset="partitionTableOffset"
-                :busy="busy"
-                @update:partition-table-offset="updatePartitionTableOffset"
-                @refresh-partitions="refreshPartitionTable()" />
+                :connected="connected" />
             </v-window-item>
 
             <v-window-item value="nvs">
@@ -3965,18 +3962,7 @@ let eraseFillBlock: number[] | null = null;
 const selectedBaud = ref<BaudRate>(DEFAULT_FLASH_BAUD as BaudRate);
 const baudrateOptions = SUPPORTED_BAUDRATES;
 const flashOffset = ref('0x0');
-const PARTITION_OFFSET_STORAGE_KEY = 'espconnect-partition-offset';
-const partitionTableOffset = ref(
-  typeof window !== 'undefined'
-    ? window.localStorage.getItem(PARTITION_OFFSET_STORAGE_KEY) ?? '0x8000'
-    : '0x8000',
-);
-function updatePartitionTableOffset(value: string) {
-  partitionTableOffset.value = value;
-  if (typeof window !== 'undefined') {
-    window.localStorage.setItem(PARTITION_OFFSET_STORAGE_KEY, value);
-  }
-}
+const partitionTableOffset = ref(0x8000);
 const eraseFlash = ref(false);
 const higherBaudrateAvailable = ref(false);
 const selectedPreset = ref<string | number | null>(null);
@@ -5066,12 +5052,9 @@ const UNUSED_SEGMENT_PATTERN =
   'repeating-linear-gradient(270deg, rgba(248, 113, 113, 0.65) 0px, rgba(248, 113, 113, 0.65) 12px, rgba(220, 38, 38, 0.65) 12px, rgba(220, 38, 38, 0.65) 24px)';
 
 const RESERVED_SEGMENTS = computed(() => {
-  let ptOffset = 0x8000;
-  try {
-    ptOffset = parseOffset(partitionTableOffset.value);
-  } catch {
-    // keep default
-  }
+  const ptOffset = Number.isSafeInteger(partitionTableOffset.value) && partitionTableOffset.value > 0
+    ? partitionTableOffset.value
+    : 0x8000;
   return [
     {
       key: 'bootloader',
@@ -6296,17 +6279,8 @@ async function connect() {
     } else if (loader.value) {
       const loaderInstance = loader.value;
       const detectedOffset = await runLoaderOperation(() => probePartitionTableOffset(loaderInstance, appendLog));
-      let partitionOffset: number;
-      if (detectedOffset != null) {
-        partitionOffset = detectedOffset;
-        updatePartitionTableOffset(`0x${detectedOffset.toString(16)}`);
-      } else {
-        try {
-          partitionOffset = parseOffset(partitionTableOffset.value);
-        } catch {
-          partitionOffset = 0x8000;
-        }
-      }
+      const partitionOffset = detectedOffset ?? 0x8000;
+      partitionTableOffset.value = partitionOffset;
       const partitions = await runLoaderOperation(() => readPartitionTable(loaderInstance, partitionOffset, undefined, appendLog));
       partitionTable.value = partitions;
       appMetadataLoaded.value = false;
@@ -6460,16 +6434,9 @@ async function refreshPartitionTable(loaderInstance = loader.value) {
       partitionTable.value = [];
       return;
     }
-    let offset: number;
-    try {
-      offset = parseOffset(partitionTableOffset.value);
-    } catch (err) {
-      appendLog(
-        `Invalid partition table offset "${partitionTableOffset.value}". ${formatErrorMessage(err)}`,
-        '[ESPConnect-Warn]',
-      );
-      return;
-    }
+    const detectedOffset = await runLoaderOperation(() => probePartitionTableOffset(loaderInstance, appendLog));
+    const offset = detectedOffset ?? 0x8000;
+    partitionTableOffset.value = offset;
     const partitions = await runLoaderOperation(() =>
       readPartitionTable(loaderInstance, offset, undefined, appendLog),
     );
