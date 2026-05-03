@@ -487,6 +487,11 @@ const de = {
     pagesCount: '{count} Seiten',
     namespacesCount: '{count} Namespaces',
     entriesCount: '{count} Einträge',
+    usage: {
+      label: 'Belegt {used} / {total}',
+      tooltip:
+        'Eintragsspeicher: {percent}% der Partition · geschrieben: {written} · gelöscht: {erased} · frei: {free} · ungültig: {illegal} · Eintragskapazität: {capacity}',
+    },
     tabs: {
       keys: 'Schlüssel',
       pages: 'Seiten',

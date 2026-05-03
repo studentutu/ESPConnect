@@ -487,6 +487,11 @@
     pagesCount: '{count} pages',
     namespacesCount: '{count} espaces',
     entriesCount: '{count} entrées',
+    usage: {
+      label: 'Utilisé {used} / {total}',
+      tooltip:
+        'Stockage des entrées : {percent}% de la partition · écrit : {written} · effacé : {erased} · libre : {free} · illégal : {illegal} · capacité des entrées : {capacity}',
+    },
     tabs: {
       keys: 'Keys',
       pages: 'Pages',

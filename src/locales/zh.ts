@@ -485,6 +485,11 @@
     pagesCount: '{count} 页',
     namespacesCount: '{count} 命名空间',
     entriesCount: '{count} 条目',
+    usage: {
+      label: '已用 {used} / {total}',
+      tooltip:
+        '条目存储：占分区 {percent}% · 已写入：{written} · 已擦除：{erased} · 空闲：{free} · 非法：{illegal} · 条目容量：{capacity}',
+    },
     tabs: {
       keys: '键',
       pages: '页面',

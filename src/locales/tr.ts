@@ -487,6 +487,11 @@
     pagesCount: '{count} sayfa',
     namespacesCount: '{count} isim alanı',
     entriesCount: '{count} giriş',
+    usage: {
+      label: 'Kullanılan {used} / {total}',
+      tooltip:
+        'Giriş depolaması: bölümün %{percent} kadarı · yazılı: {written} · silinmiş: {erased} · boş: {free} · geçersiz: {illegal} · giriş kapasitesi: {capacity}',
+    },
     tabs: {
       keys: 'Anahtarlar',
       pages: 'Sayfalar',

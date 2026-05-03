@@ -487,6 +487,11 @@
     pagesCount: '{count} pages',
     namespacesCount: '{count} namespaces',
     entriesCount: '{count} entries',
+    usage: {
+      label: 'Used {used} / {total}',
+      tooltip:
+        'Entry storage: {percent}% of partition · written: {written} · erased: {erased} · free: {free} · illegal: {illegal} · entry capacity: {capacity}',
+    },
     tabs: {
       keys: 'Keys',
       pages: 'Pages',
