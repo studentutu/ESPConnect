@@ -3,6 +3,7 @@
 ## 1.1.11-preview
 ### Improvement
 - NVS Inspector now shows used NVS entry storage in bytes compared with the selected NVS partition size ([issue #157](https://github.com/thelastoutpostworkshop/ESPConnect/issues/157)).
+- Added a scalable SVG favicon while keeping the existing ICO fallback ([PR #158](https://github.com/thelastoutpostworkshop/ESPConnect/pull/158)).
 
 ### Fixed
 - Partition table read failures now show a clear UI error instead of appearing as an empty partition/app list ([issue #159](https://github.com/thelastoutpostworkshop/ESPConnect/issues/159)).
