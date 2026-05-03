@@ -1,6 +1,8 @@
 # Changelog
 
 ## 1.1.11-preview
+### Fixed
+- Partition table read failures now show a clear UI error instead of appearing as an empty partition/app list ([issue #159](https://github.com/thelastoutpostworkshop/ESPConnect/issues/159)).
 
 ## 1.1.10
 - Added German translations. Thanks to flxcraft for the contribution ([PR #141](https://github.com/thelastoutpostworkshop/ESPConnect/pull/141)).
