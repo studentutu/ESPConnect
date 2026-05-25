@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <v-app>
     <v-navigation-drawer permanent app elevation="1">
       <v-list>
@@ -4381,6 +4381,7 @@ const languageLabelKeys: Record<SupportedLocale, string> = {
   zh: 'language.chinese',
   tr: 'language.turkish',
   de: 'language.german',
+  cs: 'language.czech',
 };
 const languageOptions = computed(() =>
   supportedLocales.map(code => ({
