@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { useTheme } from 'vuetify';
 import arduinoMakerWorkshopThumbnail from '../assets/tool-thumbnails/arduino-maker-workshop.jpg';
 import espBoardVaultThumbnail from '../assets/tool-thumbnails/esp-board-vault.jpg';
 import gpioViewerThumbnail from '../assets/tool-thumbnails/gpio-viewer.jpg';
@@ -30,6 +31,8 @@ interface ToolCardItem extends ToolItem {
 }
 
 const { t } = useI18n();
+const theme = useTheme();
+const isDarkTheme = computed(() => theme.global.current.value.dark);
 
 const coffeeUrl = 'https://buymeacoffee.com/thelastoutpostworkshop';
 
@@ -144,7 +147,7 @@ function normalizeYoutubeVideoId(value: string | null | undefined): string | nul
 </script>
 
 <template>
-  <section class="maker-tools">
+  <section :class="['maker-tools', isDarkTheme ? 'maker-tools--dark' : 'maker-tools--light']">
     <header class="maker-tools__header">
       <div>
         <h2 class="maker-tools__title">{{ t('makerTools.title') }}</h2>
@@ -251,14 +254,39 @@ function normalizeYoutubeVideoId(value: string | null | undefined): string | nul
 
 <style scoped>
 .maker-tools {
+  display: grid;
+  gap: 16px;
+  color: rgb(var(--v-theme-on-surface));
+}
+
+.maker-tools--light {
+  --maker-tools-accent: #0f766e;
+  --maker-tools-accent-contrast: #ffffff;
+  --maker-tools-accent-wash: rgba(15, 118, 110, 0.08);
+  --maker-tools-card-wash: rgba(15, 118, 110, 0.05);
+  --maker-tools-panel: rgb(var(--v-theme-surface));
+  --maker-tools-panel-strong: color-mix(in srgb, rgb(var(--v-theme-surface)) 88%, #ccfbf1 12%);
+  --maker-tools-line: rgba(15, 118, 110, 0.18);
+  --maker-tools-icon-bg: rgba(15, 118, 110, 0.1);
+  --maker-tools-icon-border: rgba(15, 118, 110, 0.24);
+  --maker-tools-actions-bg: color-mix(in srgb, rgb(var(--v-theme-surface)) 92%, #ccfbf1 8%);
+  --maker-tools-card-shadow: 0 12px 26px rgba(15, 23, 42, 0.1);
+  --maker-tools-inset-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.65);
+}
+
+.maker-tools--dark {
   --maker-tools-accent: #35d6b8;
+  --maker-tools-accent-contrast: #06251f;
+  --maker-tools-accent-wash: rgba(53, 214, 184, 0.08);
+  --maker-tools-card-wash: rgba(53, 214, 184, 0.06);
   --maker-tools-panel: #11201d;
   --maker-tools-panel-strong: #152824;
   --maker-tools-line: rgba(93, 210, 185, 0.2);
-
-  display: grid;
-  gap: 16px;
-  color: color-mix(in srgb, var(--v-theme-on-surface) 88%, #ffffff 12%);
+  --maker-tools-icon-bg: rgba(53, 214, 184, 0.1);
+  --maker-tools-icon-border: rgba(53, 214, 184, 0.28);
+  --maker-tools-actions-bg: rgba(9, 24, 21, 0.5);
+  --maker-tools-card-shadow: 0 12px 26px rgba(0, 0, 0, 0.18);
+  --maker-tools-inset-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
 .maker-tools__header {
@@ -278,7 +306,7 @@ function normalizeYoutubeVideoId(value: string | null | undefined): string | nul
 .maker-tools__subtitle {
   max-width: 720px;
   margin: 8px 0 0;
-  color: color-mix(in srgb, var(--v-theme-on-surface) 68%, transparent);
+  color: rgba(var(--v-theme-on-surface), 0.68);
   line-height: 1.55;
 }
 
@@ -291,18 +319,18 @@ function normalizeYoutubeVideoId(value: string | null | undefined): string | nul
   border-radius: 8px;
   padding: 16px;
   background:
-    linear-gradient(90deg, rgba(53, 214, 184, 0.08), transparent 70%),
+    linear-gradient(90deg, var(--maker-tools-accent-wash), transparent 70%),
     var(--maker-tools-panel);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  box-shadow: var(--maker-tools-inset-highlight);
 }
 
 .maker-tools__support-icon,
 .maker-tools__icon {
   display: grid;
   place-items: center;
-  border: 1px solid rgba(53, 214, 184, 0.28);
+  border: 1px solid var(--maker-tools-icon-border);
   border-radius: 8px;
-  background: rgba(53, 214, 184, 0.1);
+  background: var(--maker-tools-icon-bg);
   color: var(--maker-tools-accent);
 }
 
@@ -321,13 +349,13 @@ function normalizeYoutubeVideoId(value: string | null | undefined): string | nul
 
 .maker-tools__support-copy p {
   margin: 6px 0 0;
-  color: color-mix(in srgb, var(--v-theme-on-surface) 68%, transparent);
+  color: rgba(var(--v-theme-on-surface), 0.68);
   line-height: 1.5;
 }
 
 .maker-tools__support-button {
   background: var(--maker-tools-accent) !important;
-  color: #06251f !important;
+  color: var(--maker-tools-accent-contrast) !important;
   font-weight: 750;
 }
 
@@ -346,11 +374,11 @@ function normalizeYoutubeVideoId(value: string | null | undefined): string | nul
   border: 1px solid var(--maker-tools-line);
   border-radius: 8px;
   background:
-    linear-gradient(120deg, rgba(53, 214, 184, 0.06), transparent 42%),
+    linear-gradient(120deg, var(--maker-tools-card-wash), transparent 42%),
     var(--maker-tools-panel);
   box-shadow:
-    0 12px 26px rgba(0, 0, 0, 0.18),
-    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    var(--maker-tools-card-shadow),
+    var(--maker-tools-inset-highlight);
 }
 
 .maker-tools__card-body {
@@ -459,7 +487,7 @@ function normalizeYoutubeVideoId(value: string | null | undefined): string | nul
 
 .maker-tools__copy p {
   margin: 8px 0 12px;
-  color: color-mix(in srgb, var(--v-theme-on-surface) 70%, transparent);
+  color: rgba(var(--v-theme-on-surface), 0.7);
   line-height: 1.5;
 }
 
@@ -485,7 +513,7 @@ function normalizeYoutubeVideoId(value: string | null | undefined): string | nul
   align-items: center;
   gap: 8px;
   padding: 12px 16px;
-  background: rgba(9, 24, 21, 0.5);
+  background: var(--maker-tools-actions-bg);
 }
 
 .maker-tools__action-btn {
