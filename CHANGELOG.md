@@ -1,6 +1,9 @@
 # Changelog
 
 ## 1.1.18
+### Improvement
+- Device Information now shows ESP32-P4 silicon capabilities, correctly identifies its package and revision fields, and lets users expand long capability lists ([issue #167](https://github.com/thelastoutpostworkshop/ESPConnect/issues/167)).
+
 ### Internal runtime
 - Bump Electron from 42.7.1 to 43.2.0.
 
